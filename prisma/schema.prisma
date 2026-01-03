@@ -11,11 +11,11 @@ model Item {
   id          String   @id @default(cuid())
   title       String
   description String?
-  category    String?
+  category    String
   imageUrl    String?
   isAvailable Boolean  @default(true)
-
+  
+  status      String   @default("AVAILABLE")
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }
 

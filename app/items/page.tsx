@@ -1,74 +1,55 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
 type Item = {
   id: string;
   title: string;
-  description: string;
+  description?: string | null;
   category: string;
-  condition: string;
-  owner: {
-    name: string;
-  };
+  imageUrl?: string | null;
+  isAvailable: boolean;
+  createdAt: string;
 };
 
-export default function ItemsPage() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
+async function getItems(): Promise<Item[]> {
+  const res = await fetch("http://localhost:3000/api/items", { cache: "no-store" });
+  if (!res.ok) return [];
+  return res.json();
+}
 
-  async function fetchItems() {
-    try {
-      const res = await fetch("/api/items");
-      const data = await res.json();
-      setItems(data);
-    } catch (error) {
-      console.error("Failed to fetch items", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
+export default async function ItemsPage() {
+  const items = await getItems();
 
   return (
-    <main className="max-w-5xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Available Items</h1>
+    <main className="mx-auto max-w-4xl px-6 py-10">
+      <h1 className="text-4xl font-bold">Available Items</h1>
+      <a
+  href="/items/new"
+  className="mt-4 inline-block rounded-md bg-black px-4 py-2 text-white"
+>
+  + Add Item
+</a>
 
-      {loading && <p>Loading items...</p>}
+      {items.length === 0 ? (
+        <p className="mt-6 text-zinc-600">No items available.</p>
+      ) : (
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+          {items.map((it) => (
+            <li key={it.id} className="rounded-xl border p-4">
+  <div className="text-xs text-zinc-500">{it.category}</div>
+  <div className="mt-1 text-lg font-semibold">{it.title}</div>
 
-      {!loading && items.length === 0 && (
-        <p className="text-gray-600">No items available.</p>
+  {it.description ? (
+    <p className="mt-2 text-sm text-zinc-600">{it.description}</p>
+  ) : null}
+
+  <button className="mt-4 rounded-md border px-3 py-2 text-sm hover:bg-zinc-50">
+    Request to Borrow
+  </button>
+</li>
+
+          ))}
+        </ul>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="border rounded-lg p-4 bg-white shadow-sm"
-          >
-            <h2 className="text-xl font-semibold">{item.title}</h2>
-
-            <p className="text-sm text-gray-600 mt-1">
-              {item.description}
-            </p>
-
-            <div className="text-sm text-gray-500 mt-2">
-              Category: <span className="font-medium">{item.category}</span>
-            </div>
-
-            <div className="text-sm text-gray-500">
-              Condition: <span className="font-medium">{item.condition}</span>
-            </div>
-
-            <div className="text-xs text-gray-400 mt-3">
-              Owner: {item.owner?.name ?? "Unknown"}
-            </div>
-          </div>
-        ))}
-      </div>
     </main>
   );
 }
+
+
