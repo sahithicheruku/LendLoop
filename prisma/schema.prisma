@@ -7,49 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum RequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  RETURNED
-}
-
-model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
-
-  items     Item[]   @relation("UserItems")
-  requests  BorrowRequest[] @relation("UserRequests")
-}
-
 model Item {
   id          String   @id @default(cuid())
   title       String
-  description String
-  category    String
-  condition   String
+  description String?
+  category    String?
+  imageUrl    String?
   isAvailable Boolean  @default(true)
+
   createdAt   DateTime @default(now())
-
-  ownerId     String
-  owner       User     @relation("UserItems", fields: [ownerId], references: [id])
-
-  requests    BorrowRequest[]
+  updatedAt   DateTime @updatedAt
 }
 
-model BorrowRequest {
-  id        String        @id @default(cuid())
-  status    RequestStatus @default(PENDING)
-  startDate DateTime
-  endDate   DateTime
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-
-  itemId    String
-  item      Item          @relation(fields: [itemId], references: [id])
-
-  borrowerId String
-  borrower   User         @relation("UserRequests", fields: [borrowerId], references: [id])
-}
