@@ -1,39 +1,68 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { prisma } from "@/lib/prisma";
 
-export async function PATCH(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const updated = await prisma.item.update({
-      where: { id: params.id },
-      data: { isAvailable: false },
-    });
-    return NextResponse.json(updated);
-  } catch (e: any) {
-    console.error("PATCH /api/items/[id] failed:", e);
-    return NextResponse.json(
-      { ok: false, error: e?.message ?? "PATCH failed" },
-      { status: 500 }
-    );
-  }
+function getIdFromUrl(req: Request) {
+  const url = new URL(req.url);
+  const parts = url.pathname.split("/").filter(Boolean);
+  return parts[parts.length - 1]; // last segment
 }
 
 export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
+  req: Request,
+  ctx: { params?: { id?: string } }
 ) {
-  try {
-    await prisma.item.delete({
-      where: { id: params.id },
-    });
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    console.error("DELETE /api/items/[id] failed:", e);
+  const id = ctx?.params?.id ?? getIdFromUrl(req);
+
+  console.log("DELETE ctx.params =", ctx?.params);
+  console.log("DELETE id =", id);
+
+  if (!id || id === "items") {
     return NextResponse.json(
-      { ok: false, error: e?.message ?? "DELETE failed" },
+      { ok: false, error: "Missing id (params/url)", params: ctx?.params, url: req.url },
+      { status: 400 }
+    );
+  }
+
+  try {
+    await prisma.item.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error("DELETE prisma error:", err);
+    return NextResponse.json(
+      { ok: false, error: err?.message ?? String(err) },
       { status: 500 }
     );
   }
 }
+
+export async function PATCH(
+  req: Request,
+  ctx: { params?: { id?: string } }
+) {
+  const id = ctx?.params?.id ?? getIdFromUrl(req);
+
+  console.log("PATCH ctx.params =", ctx?.params);
+  console.log("PATCH id =", id);
+
+  if (!id || id === "items") {
+    return NextResponse.json(
+      { ok: false, error: "Missing id (params/url)", params: ctx?.params, url: req.url },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const updated = await prisma.item.update({
+      where: { id },
+      data: { isAvailable: false },
+    });
+    return NextResponse.json(updated);
+  } catch (err: any) {
+    console.error("PATCH prisma error:", err);
+    return NextResponse.json(
+      { ok: false, error: err?.message ?? String(err) },
+      { status: 500 }
+    );
+  }
+}
+
