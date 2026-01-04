@@ -1,4 +1,5 @@
 import ItemsClient from "./ItemsClient";
+import Link from "next/link";
 
 type Item = {
   id: string;
@@ -23,14 +24,30 @@ export default async function ItemsPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="text-4xl font-bold">Available Items </h1>
+      <h1 className="text-4xl font-bold">Available Items</h1>
 
-      <a
-        href="/items/new"
-        className="mt-4 inline-block rounded-md bg-black px-4 py-2 text-white"
-      >
-        + Add Item
-      </a>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link
+          href="/items/new"
+          className="inline-block rounded-md bg-black px-4 py-2 text-white"
+        >
+          + Add Item
+        </Link>
+
+        <Link
+          href="/items/requests"
+          className="rounded-md border px-3 py-2 text-sm"
+        >
+          My Requests
+        </Link>
+
+        <Link
+          href="/items/borrowed"
+          className="rounded-md border px-3 py-2 text-sm"
+        >
+          Borrowed Items
+        </Link>
+      </div>
 
       {items.length === 0 ? (
         <p className="mt-6 text-zinc-600">No items available.</p>
@@ -40,6 +57,4 @@ export default async function ItemsPage() {
     </main>
   );
 }
-
-
 
