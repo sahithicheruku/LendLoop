@@ -15,24 +15,22 @@ type Item = {
 
 export default function ItemsClient({ items }: { items: Item[] }) {
   const router = useRouter();
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   async function requestItem(id: string) {
     try {
-      setLoadingId(id);
-
-      // OPTION A (recommended): PATCH /api/items/[id]
+      setBusyId(id);
       const res = await fetch(`/api/items/${id}`, { method: "PATCH" });
 
-      // If you REALLY have /request route, switch to OPTION B below
-      // const res = await fetch(`/api/items/${id}/request`, { method: "POST" });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        alert(`Request failed (${res.status})\n${text}`);
+        return;
+      }
 
-      if (!res.ok) throw new Error("Request failed");
-      router.refresh();
-    } catch (e) {
-      alert("Failed to request item.");
+      window.location.reload(); // strong refresh
     } finally {
-      setLoadingId(null);
+      setBusyId(null);
     }
   }
 
@@ -41,42 +39,47 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     if (!ok) return;
 
     try {
-      setLoadingId(id);
+      setBusyId(id);
+
       const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Delete failed");
-      router.refresh();
-    } catch (e) {
-      alert("Failed to delete item.");
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        alert(`Delete failed (${res.status})\n${text}`);
+        return;
+      }
+
+      // strongest refresh to avoid caching issues
+      window.location.reload();
     } finally {
-      setLoadingId(null);
+      setBusyId(null);
     }
   }
 
   return (
     <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-      {items.map((item) => (
-        <li key={item.id} className="rounded-xl border p-4">
-          <div className="text-xs text-zinc-500">{item.category}</div>
-          <div className="mt-1 text-lg font-semibold">{item.title}</div>
+      {items.map((it) => (
+        <li key={it.id} className="rounded-xl border p-4">
+          <div className="text-xs text-zinc-500">{it.category}</div>
+          <div className="mt-1 text-lg font-semibold">{it.title}</div>
 
-          {item.description && (
-            <p className="mt-2 text-sm text-zinc-600">{item.description}</p>
-          )}
+          {it.description ? (
+            <p className="mt-2 text-sm text-zinc-600">{it.description}</p>
+          ) : null}
 
-          {/* BUTTONS */}
           <div className="mt-4 flex gap-2">
             <button
-              onClick={() => requestItem(item.id)}
-              disabled={loadingId === item.id || !item.isAvailable}
-              className="rounded-md border px-3 py-2"
+              onClick={() => requestItem(it.id)}
+              disabled={!it.isAvailable || busyId === it.id}
+              className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
             >
-              {item.isAvailable ? "Request to Borrow" : "Not Available"}
+              {it.isAvailable ? "Request to Borrow" : "Not Available"}
             </button>
 
             <button
-              onClick={() => deleteItem(item.id)}
-              disabled={loadingId === item.id}
-              className="rounded-md border border-red-500 px-3 py-2 text-red-600"
+              onClick={() => deleteItem(it.id)}
+              disabled={busyId === it.id}
+              className="rounded-md border border-red-500 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-60"
             >
               Delete
             </button>
