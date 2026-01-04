@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Item = {
   id: string;
@@ -11,24 +11,36 @@ type Item = {
   imageUrl?: string | null;
   isAvailable: boolean;
   createdAt: string;
+  status?: string;
 };
 
 export default function ItemsClient({ items }: { items: Item[] }) {
   const router = useRouter();
+
+  const [list, setList] = useState<Item[]>(items);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setList(items);
+  }, [items]);
 
   async function requestItem(id: string) {
     try {
       setBusyId(id);
+
       const res = await fetch(`/api/items/${id}`, { method: "PATCH" });
+      const text = await res.text().catch(() => "");
 
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
         alert(`Request failed (${res.status})\n${text}`);
         return;
       }
 
-      window.location.reload(); // strong refresh
+      // ✅ Since this component is also used on /items (Available),
+      // remove requested item immediately so it disappears from Available list
+      setList((prev) => prev.filter((it) => it.id !== id));
+
+      router.refresh();
     } finally {
       setBusyId(null);
     }
@@ -38,19 +50,26 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     const ok = confirm("Delete this item?");
     if (!ok) return;
 
+    // ✅ store the item so we can rollback if needed
+    const toRestore = list.find((x) => x.id === id);
+
+    // ✅ remove from UI immediately
+    setList((prev) => prev.filter((it) => it.id !== id));
+
     try {
       setBusyId(id);
 
       const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
+      const text = await res.text().catch(() => "");
 
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
+        // ✅ rollback safely
+        if (toRestore) setList((prev) => [toRestore, ...prev]);
         alert(`Delete failed (${res.status})\n${text}`);
         return;
       }
 
-      // strongest refresh to avoid caching issues
-      window.location.reload();
+      router.refresh();
     } finally {
       setBusyId(null);
     }
@@ -58,7 +77,7 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
   return (
     <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-      {items.map((it) => (
+      {list.map((it) => (
         <li key={it.id} className="rounded-xl border p-4">
           <div className="text-xs text-zinc-500">{it.category}</div>
           <div className="mt-1 text-lg font-semibold">{it.title}</div>
@@ -68,13 +87,20 @@ export default function ItemsClient({ items }: { items: Item[] }) {
           ) : null}
 
           <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => requestItem(it.id)}
-              disabled={!it.isAvailable || busyId === it.id}
-              className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
-            >
-              {it.isAvailable ? "Request to Borrow" : "Not Available"}
-            </button>
+           {it.status === "AVAILABLE" ? (
+  <button
+    onClick={() => requestItem(it.id)}
+    disabled={busyId === it.id}
+    className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
+  >
+    Request to Borrow
+  </button>
+) : (
+  <span className="rounded-md border px-3 py-2 text-sm text-zinc-500">
+    {it.status}
+  </span>
+)}
+
 
             <button
               onClick={() => deleteItem(it.id)}

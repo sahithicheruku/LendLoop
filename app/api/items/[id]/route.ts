@@ -1,66 +1,85 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-function getIdFromUrl(req: Request) {
-  const url = new URL(req.url);
-  const parts = url.pathname.split("/").filter(Boolean);
-  return parts[parts.length - 1]; // last segment
-}
-
-export async function DELETE(
-  req: Request,
-  ctx: { params?: { id?: string } }
+// GET /api/items/[id]
+export async function GET(
+  _req: Request,
+  { params }: { params: { id: string } }
 ) {
-  const id = ctx?.params?.id ?? getIdFromUrl(req);
+  const id = params.id;
 
-  console.log("DELETE ctx.params =", ctx?.params);
-  console.log("DELETE id =", id);
-
-  if (!id || id === "items") {
-    return NextResponse.json(
-      { ok: false, error: "Missing id (params/url)", params: ctx?.params, url: req.url },
-      { status: 400 }
-    );
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   }
 
-  try {
-    await prisma.item.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error("DELETE prisma error:", err);
-    return NextResponse.json(
-      { ok: false, error: err?.message ?? String(err) },
-      { status: 500 }
-    );
+  const item = await prisma.item.findUnique({ where: { id } });
+
+  if (!item) {
+    return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   }
+
+  return NextResponse.json(item);
 }
 
+// PATCH /api/items/[id]
+// This is your "Request to Borrow" action
 export async function PATCH(
-  req: Request,
-  ctx: { params?: { id?: string } }
+  _req: Request,
+  { params }: { params: { id: string } }
 ) {
-  const id = ctx?.params?.id ?? getIdFromUrl(req);
+  const id = params.id;
 
-  console.log("PATCH ctx.params =", ctx?.params);
-  console.log("PATCH id =", id);
-
-  if (!id || id === "items") {
-    return NextResponse.json(
-      { ok: false, error: "Missing id (params/url)", params: ctx?.params, url: req.url },
-      { status: 400 }
-    );
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
   }
 
   try {
     const updated = await prisma.item.update({
       where: { id },
-      data: { isAvailable: false },
+      data: {
+        status: "REQUESTED",
+        isAvailable: false,
+      },
     });
-    return NextResponse.json(updated);
-  } catch (err: any) {
-    console.error("PATCH prisma error:", err);
+
+    return NextResponse.json({ ok: true, item: updated });
+  } catch (error: any) {
+    // record not found
+    if (error?.code === "P2025") {
+      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+    }
+
+    console.error("PATCH error:", error);
     return NextResponse.json(
-      { ok: false, error: err?.message ?? String(err) },
+      { ok: false, error: error?.message ?? "Request failed" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/items/[id]
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  const id = params.id;
+
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+  }
+
+  try {
+    await prisma.item.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    // Prisma "Record not found" -> treat as already deleted (success)
+    if (error?.code === "P2025") {
+      return NextResponse.json({ ok: true, alreadyDeleted: true });
+    }
+
+    console.error("DELETE error:", error);
+    return NextResponse.json(
+      { ok: false, error: error?.message ?? "Delete failed" },
       { status: 500 }
     );
   }
