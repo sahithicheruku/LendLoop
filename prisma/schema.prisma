@@ -7,15 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+
 model Item {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  category    String
-  imageUrl    String?
-  isAvailable Boolean  @default(true)
-  
-  status      String   @default("AVAILABLE")
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  category      String
+  imageUrl      String?
+  isAvailable   Boolean  @default(true)
+  status        String   @default("AVAILABLE") // ✅ was ItemStatus
+  requestedById String?
+  createdAt     DateTime @default(now())
 }
 

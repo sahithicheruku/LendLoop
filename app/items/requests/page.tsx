@@ -1,19 +1,17 @@
 import Link from "next/link";
 import ItemsClient from "../ItemsClient";
-
-type Item = {
-  id: string;
-  title: string;
-  description?: string | null;
-  category: string;
-  imageUrl?: string | null;
-  isAvailable: boolean;
-  createdAt: string;
-  status: string;
-};
+import type { Item } from "@/lib/types";
+import { headers } from "next/headers";
 
 async function getRequestedItems(): Promise<Item[]> {
-  const res = await fetch("http://localhost:3000/api/items?status=REQUESTED", {
+  const h = await headers();
+  const host = h.get("host");
+
+  // dev = http, production = https
+  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
+  const base = `${protocol}://${host}`;
+
+  const res = await fetch(`${base}/api/items?status=REQUESTED`, {
     cache: "no-store",
   });
 
@@ -41,4 +39,10 @@ export default async function RequestsPage() {
     </main>
   );
 }
+
+
+
+
+
+
 
