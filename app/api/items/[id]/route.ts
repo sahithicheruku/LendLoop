@@ -1,33 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/items/[id]
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
-  const id = params.id;
+type Ctx = { params: Promise<{ id: string }> };
 
-  if (!id) {
-    return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
-  }
-
-  const item = await prisma.item.findUnique({ where: { id } });
-
-  if (!item) {
-    return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
-  }
-
-  return NextResponse.json(item);
-}
-
-// PATCH /api/items/[id]
-// This is your "Request to Borrow" action
-export async function PATCH(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
-  const id = params.id;
+// PATCH /api/items/:id -> mark as REQUESTED
+export async function PATCH(_req: Request, { params }: Ctx) {
+  const { id } = await params;
 
   if (!id) {
     return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
@@ -36,19 +14,11 @@ export async function PATCH(
   try {
     const updated = await prisma.item.update({
       where: { id },
-      data: {
-        status: "REQUESTED",
-        isAvailable: false,
-      },
+      data: { status: "REQUESTED", isAvailable: false },
     });
 
-    return NextResponse.json({ ok: true, item: updated });
+    return NextResponse.json({ ok: true, item: updated }, { status: 200 });
   } catch (error: any) {
-    // record not found
-    if (error?.code === "P2025") {
-      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
-    }
-
     console.error("PATCH error:", error);
     return NextResponse.json(
       { ok: false, error: error?.message ?? "Request failed" },
@@ -57,12 +27,9 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/items/[id]
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
-  const id = params.id;
+// DELETE /api/items/:id
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const { id } = await params;
 
   if (!id) {
     return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
@@ -70,11 +37,10 @@ export async function DELETE(
 
   try {
     await prisma.item.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error: any) {
-    // Prisma "Record not found" -> treat as already deleted (success)
     if (error?.code === "P2025") {
-      return NextResponse.json({ ok: true, alreadyDeleted: true });
+      return NextResponse.json({ ok: true, alreadyDeleted: true }, { status: 200 });
     }
 
     console.error("DELETE error:", error);

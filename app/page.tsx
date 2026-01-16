@@ -1,33 +1,47 @@
+
 import Link from "next/link";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <main className="min-h-screen bg-zinc-50 flex items-center justify-center">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow p-8 space-y-6">
-        <h1 className="text-3xl font-bold text-zinc-900">
-          LendLoop
-        </h1>
+    <main className="mx-auto max-w-4xl px-6 py-14">
+      <h1 className="text-5xl font-bold">LendLoop</h1>
+      <p className="mt-4 text-zinc-600">
+        A community item lending platform. Borrow items, lend what you own, and
+        reduce waste.
+      </p>
 
-        <p className="text-zinc-600">
-          A community-driven platform to lend and borrow everyday items safely and easily.
-        </p>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Link
+          href="/items"
+          className="rounded-md bg-black px-4 py-2 text-white"
+        >
+          Browse Items
+        </Link>
 
-        <div className="flex gap-4">
-          <Link
-            href="/items"
-            className="px-4 py-2 rounded bg-black text-white hover:bg-zinc-800"
-          >
-            Browse Items
-          </Link>
+        <Link
+          href="/items/new"
+          className="rounded-md border px-4 py-2"
+        >
+          Add an Item
+        </Link>
 
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 rounded border border-zinc-300 hover:bg-zinc-100"
-          >
-            Dashboard
-          </Link>
-        </div>
+        <Link
+          href="/items/requests"
+          className="rounded-md border px-4 py-2"
+        >
+          My Requests
+        </Link>
+
+        <Link
+          href="/items/borrowed"
+          className="rounded-md border px-4 py-2"
+        >
+          Borrowed Items
+        </Link>
       </div>
     </main>
   );
 }
+
+
+
