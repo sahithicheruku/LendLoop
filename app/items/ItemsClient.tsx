@@ -21,7 +21,7 @@ export default function ItemsClient({ items }: { items: Item[] }) {
       body: JSON.stringify({ action }),
     });
 
-    const text = await res.text(); // read raw first
+    const text = await res.text();
     let data: any = null;
     try {
       data = text ? JSON.parse(text) : null;
@@ -49,16 +49,10 @@ export default function ItemsClient({ items }: { items: Item[] }) {
   async function requestItem(id: string) {
     try {
       setBusyId(id);
-
       const data = await patchItem(id, "request");
       if (!data) return;
-
-      // Local update so you see change instantly
       updateLocal(id, "REQUESTED", false);
-
-      // On Available page, remove it (optional)
       setList((prev) => prev.filter((it) => it.id !== id));
-
       router.refresh();
     } finally {
       setBusyId(null);
@@ -68,16 +62,10 @@ export default function ItemsClient({ items }: { items: Item[] }) {
   async function approveBorrow(id: string) {
     try {
       setBusyId(id);
-
       const data = await patchItem(id, "approve");
       if (!data) return;
-
-      // Local update (so you see it become BORROWED)
       updateLocal(id, "BORROWED", false);
-
-      // On Requests page, remove it (so it disappears)
       setList((prev) => prev.filter((it) => it.id !== id));
-
       router.refresh();
     } finally {
       setBusyId(null);
@@ -87,15 +75,10 @@ export default function ItemsClient({ items }: { items: Item[] }) {
   async function cancelRequest(id: string) {
     try {
       setBusyId(id);
-
       const data = await patchItem(id, "cancel");
       if (!data) return;
-
       updateLocal(id, "AVAILABLE", true);
-
-      // On Requests page, remove it
       setList((prev) => prev.filter((it) => it.id !== id));
-
       router.refresh();
     } finally {
       setBusyId(null);
@@ -105,15 +88,10 @@ export default function ItemsClient({ items }: { items: Item[] }) {
   async function returnItem(id: string) {
     try {
       setBusyId(id);
-
       const data = await patchItem(id, "return");
       if (!data) return;
-
       updateLocal(id, "AVAILABLE", true);
-
-      // On Borrowed page, remove it
       setList((prev) => prev.filter((it) => it.id !== id));
-
       router.refresh();
     } finally {
       setBusyId(null);
@@ -121,7 +99,7 @@ export default function ItemsClient({ items }: { items: Item[] }) {
   }
 
   async function deleteItem(id: string) {
-    const ok = confirm("Delete this item?");
+    const ok = confirm("Delete this item? This action cannot be undone.");
     if (!ok) return;
 
     const toRestore = list.find((x) => x.id === id);
@@ -129,7 +107,6 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
     try {
       setBusyId(id);
-
       const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
       const text = await res.text();
       let data: any = null;
@@ -152,72 +129,120 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     }
   }
 
+  // Helper to get status badge styling
+  function getStatusBadge(status: Item["status"]) {
+    const statusMap: Record<string, { label: string; bg: string; text: string; icon: string }> = {
+      AVAILABLE: { 
+        label: "Available", 
+        bg: "bg-green-100", 
+        text: "text-green-800",
+        icon: "✓"
+      },
+      REQUESTED: { 
+        label: "Requested", 
+        bg: "bg-yellow-100", 
+        text: "text-yellow-800",
+        icon: "⏳"
+      },
+      BORROWED: { 
+        label: "Borrowed", 
+        bg: "bg-blue-100", 
+        text: "text-blue-800",
+        icon: "📦"
+      },
+    };
+
+    const currentStatus = status || "AVAILABLE";
+    const config = statusMap[currentStatus] || statusMap["AVAILABLE"];
+    
+    return (
+      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${config.bg} ${config.text}`}>
+        <span>{config.icon}</span>
+        {config.label}
+      </span>
+    );
+  }
+
   return (
-    <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {list.map((it) => {
         const status = it.status ?? "AVAILABLE";
         const isBusy = busyId === it.id;
 
         return (
-          <li key={it.id} className="rounded-xl border p-4">
-            <div className="text-xs text-zinc-500">{it.category}</div>
-            <div className="mt-1 text-lg font-semibold">{it.title}</div>
-
-            {it.description ? (
-              <p className="mt-2 text-sm text-zinc-600">{it.description}</p>
-            ) : null}
-
-            <div className="mt-2 text-xs font-medium text-blue-600">
-              Status: {status}
+          <li 
+            key={it.id} 
+            className="group rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm transition hover:border-[#d97706] hover:shadow-md"
+          >
+            {/* Category & Status */}
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#78716c]">
+                {it.category || "Uncategorized"}
+              </span>
+              {getStatusBadge(status)}
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {status === "AVAILABLE" ? (
+            {/* Title */}
+            <h3 className="mt-3 text-xl font-bold text-[#1c1917] group-hover:text-[#d97706] transition">
+              {it.title}
+            </h3>
+
+            {/* Description */}
+            {it.description && (
+              <p className="mt-2 text-sm leading-relaxed text-[#57534e] line-clamp-2">
+                {it.description}
+              </p>
+            )}
+
+            {/* Actions */}
+            <div className="mt-5 flex flex-col gap-2">
+              {status === "AVAILABLE" && (
                 <button
                   onClick={() => requestItem(it.id)}
                   disabled={isBusy}
-                  className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
+                  className="rounded-md bg-[#d97706] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b45309] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Request to Borrow
+                  {isBusy ? "Requesting..." : "Request to Borrow"}
                 </button>
-              ) : null}
+              )}
 
-              {status === "REQUESTED" ? (
-                <>
+              {status === "REQUESTED" && (
+                <div className="flex gap-2">
                   <button
                     onClick={() => approveBorrow(it.id)}
                     disabled={isBusy}
-                    className="rounded-md bg-black px-3 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-60"
+                    className="flex-1 rounded-md bg-[#2d1810] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1c1410] disabled:opacity-50"
                   >
-                    Approve → Borrowed
+                    {isBusy ? "Approving..." : "Approve"}
                   </button>
 
                   <button
                     onClick={() => cancelRequest(it.id)}
                     disabled={isBusy}
-                    className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
+                    className="flex-1 rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2.5 text-sm font-semibold text-[#2d1810] transition hover:border-[#78716c] disabled:opacity-50"
                   >
-                    Cancel Request
+                    {isBusy ? "Canceling..." : "Cancel"}
                   </button>
-                </>
-              ) : null}
+                </div>
+              )}
 
-              {status === "BORROWED" ? (
+              {status === "BORROWED" && (
                 <button
                   onClick={() => returnItem(it.id)}
                   disabled={isBusy}
-                  className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
+                  className="rounded-md bg-[#d97706] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b45309] disabled:opacity-50"
                 >
-                  Mark as Returned
+                  {isBusy ? "Processing..." : "Mark as Returned"}
                 </button>
-              ) : null}
+              )}
 
+              {/* Delete button - always shown but styled subtly */}
               <button
                 onClick={() => deleteItem(it.id)}
                 disabled={isBusy}
-                className="rounded-md border border-red-500 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-60"
+                className="rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:border-red-300 disabled:opacity-50"
               >
-                Delete
+                {isBusy ? "Deleting..." : "Delete Item"}
               </button>
             </div>
           </li>

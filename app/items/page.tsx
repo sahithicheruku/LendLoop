@@ -21,108 +21,117 @@ export default async function ItemsPage() {
   const items = await getItems();
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-zinc-50 to-white">
+    <main className="min-h-screen bg-[#faf8f5]">
       <div className="mx-auto max-w-6xl px-6 py-10">
-        {/* Header / Hero */}
-        <div className="rounded-3xl border bg-white/70 p-8 shadow-sm backdrop-blur">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm font-medium text-zinc-600">
-                LendLoop • Community Lending
-              </p>
-              <h1 className="mt-2 text-4xl font-bold tracking-tight text-zinc-900 md:text-5xl">
-                Available Items
-              </h1>
-              <p className="mt-3 max-w-2xl text-base text-zinc-600">
-                Browse items from the community. Request what you need, lend what you
-                own, and reduce waste.
-              </p>
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-sm font-medium text-[#78716c] transition hover:text-[#d97706]"
+          >
+            ← Back to Home
+          </Link>
+          
+          <div className="flex gap-3">
+            <Link
+              href="/items/requests"
+              className="rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2 text-sm font-semibold text-[#2d1810] transition hover:border-[#d97706]"
+            >
+              My Requests
+            </Link>
+            <Link
+              href="/items/borrowed"
+              className="rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2 text-sm font-semibold text-[#2d1810] transition hover:border-[#d97706]"
+            >
+              Borrowed
+            </Link>
+            <Link
+              href="/items/new"
+              className="rounded-md bg-[#d97706] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#b45309]"
+            >
+              + Add Item
+            </Link>
+          </div>
+        </div>
+
+        {/* Hero Section */}
+        <div className="rounded-lg bg-white border border-[#e7e5e4] p-8 shadow-sm">
+          <div>
+            <div className="inline-block rounded-full bg-[#fef3c7] px-3 py-1 text-xs font-semibold text-[#92400e] mb-3">
+              Browse Catalog
             </div>
-
-            {/* Actions */}
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/items/new"
-                className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800"
-              >
-                + Add Item
-              </Link>
-
-              <Link
-                href="/items/requests"
-                className="inline-flex items-center justify-center rounded-xl border bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50"
-              >
-                My Requests
-              </Link>
-
-              <Link
-                href="/items/borrowed"
-                className="inline-flex items-center justify-center rounded-xl border bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50"
-              >
-                Borrowed Items
-              </Link>
-            </div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-[#1c1917]">
+              Available Items
+            </h1>
+            <p className="mt-3 max-w-2xl text-base text-[#57534e]">
+              Browse items from your community. Found something you need? Send a request and coordinate pickup with the owner.
+            </p>
           </div>
 
-          {/* Quick stats */}
+          {/* Quick Info Cards */}
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border bg-white p-5">
-              <div className="text-sm text-zinc-500">Available now</div>
-              <div className="mt-1 text-3xl font-bold text-zinc-900">
+            <div className="rounded-lg border border-[#e7e5e4] bg-gradient-to-br from-[#fef3c7] to-white p-5">
+              <div className="text-sm font-semibold text-[#78350f]">Available Now</div>
+              <div className="mt-2 text-3xl font-extrabold text-[#92400e]">
                 {items.length}
               </div>
-              <div className="mt-2 text-sm text-zinc-600">
-                Items you can request immediately
+              <div className="mt-1 text-sm text-[#78716c]">
+                {items.length === 1 ? 'item ready' : 'items ready'} to borrow
               </div>
             </div>
 
-            <div className="rounded-2xl border bg-white p-5">
-              <div className="text-sm text-zinc-500">Tip</div>
-              <div className="mt-1 text-lg font-semibold text-zinc-900">
-                Add clear categories
+            <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
+              <div className="text-sm font-semibold text-[#57534e]">💡 Quick Tip</div>
+              <div className="mt-2 text-base font-bold text-[#2d1810]">
+                Check descriptions
               </div>
-              <div className="mt-2 text-sm text-zinc-600">
-                Helps others find your items faster.
+              <div className="mt-1 text-sm text-[#78716c]">
+                Owners add pickup details & conditions
               </div>
             </div>
 
-            <div className="rounded-2xl border bg-white p-5">
-              <div className="text-sm text-zinc-500">Safety</div>
-              <div className="mt-1 text-lg font-semibold text-zinc-900">
-                Meet in public
+            <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
+              <div className="text-sm font-semibold text-[#57534e]">🤝 Be Respectful</div>
+              <div className="mt-2 text-base font-bold text-[#2d1810]">
+                Return on time
               </div>
-              <div className="mt-2 text-sm text-zinc-600">
-                Prefer public locations for exchanges.
+              <div className="mt-1 text-sm text-[#78716c]">
+                Help keep the community thriving
               </div>
             </div>
           </div>
         </div>
 
-        {/* List */}
+        {/* Items List */}
         <div className="mt-10">
-          <div className="mb-4 flex items-end justify-between">
-            <h2 className="text-lg font-semibold text-zinc-900">
-              Browse ({items.length})
+          <div className="mb-6 flex items-end justify-between">
+            <h2 className="text-2xl font-bold text-[#1c1917]">
+              Browse Items {items.length > 0 && `(${items.length})`}
             </h2>
-            <p className="text-sm text-zinc-500">
-              Updated in real-time as requests happen
-            </p>
+            {items.length > 0 && (
+              <p className="text-sm text-[#78716c]">
+                Updated in real-time
+              </p>
+            )}
           </div>
 
           {items.length === 0 ? (
-            <div className="rounded-2xl border bg-white p-10 text-center">
-              <p className="text-lg font-semibold text-zinc-900">
-                No items available right now
-              </p>
-              <p className="mt-2 text-sm text-zinc-600">
-                Be the first to add something for others to borrow.
-              </p>
-              <Link
-                href="/items/new"
-                className="mt-6 inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800"
-              >
-                + Add Item
-              </Link>
+            <div className="rounded-lg border-2 border-dashed border-[#e7e5e4] bg-white p-16 text-center">
+              <div className="mx-auto max-w-sm">
+                <div className="text-5xl mb-4">📦</div>
+                <h3 className="text-xl font-bold text-[#2d1810]">
+                  No items available yet
+                </h3>
+                <p className="mt-3 text-sm text-[#78716c]">
+                  Be the first to share something from your garage, closet, or shed. Help build the community!
+                </p>
+                <Link
+                  href="/items/new"
+                  className="mt-6 inline-flex items-center gap-2 rounded-md bg-[#d97706] px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#b45309]"
+                >
+                  <span>+ List Your First Item</span>
+                </Link>
+              </div>
             </div>
           ) : (
             <ItemsClient items={items} />
@@ -132,4 +141,3 @@ export default async function ItemsPage() {
     </main>
   );
 }
-
