@@ -1,9 +1,18 @@
 import Link from "next/link";
 import ItemsClient from "../ItemsClient";
 import type { Item } from "@/lib/types";
+import { headers } from "next/headers";
 
 async function getBorrowedItems(): Promise<Item[]> {
-  const res = await fetch("http://localhost:3000/api/items?status=BORROWED", {
+  const h = await headers();
+  const host = h.get("host") ?? "localhost:3000";
+  const proto = host.startsWith("localhost") || host.startsWith("127.0.0.1")
+    ? "http"
+    : (h.get("x-forwarded-proto") ?? "http");
+
+  const base = `${proto}://${host}`;
+
+  const res = await fetch(`${base}/api/items?status=BORROWED`, {
     cache: "no-store",
   });
 
@@ -31,5 +40,3 @@ export default async function BorrowedPage() {
     </main>
   );
 }
-
-

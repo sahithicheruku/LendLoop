@@ -18,6 +18,7 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",                 // ✅ ADD THIS LINE
     "paths": {
       "@/*": ["./*"]
     }

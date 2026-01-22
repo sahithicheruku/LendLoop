@@ -1,9 +1,10 @@
 "use client";
 
-
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Item } from "@/lib/types";
+
+type Action = "request" | "approve" | "return" | "cancel";
 
 export default function ItemsClient({ items }: { items: Item[] }) {
   const router = useRouter();
@@ -13,20 +14,106 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
   useEffect(() => setList(items), [items]);
 
+  async function patchItem(id: string, action: Action) {
+    const res = await fetch(`/api/items/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+
+    const text = await res.text(); // read raw first
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+
+    if (!res.ok) {
+      console.error("PATCH failed:", { status: res.status, data });
+      alert(`Update failed (${res.status})\n${JSON.stringify(data, null, 2)}`);
+      return null;
+    }
+
+    return data;
+  }
+
+  function updateLocal(id: string, nextStatus: Item["status"], isAvailable: boolean) {
+    setList((prev) =>
+      prev.map((it) =>
+        it.id === id ? { ...it, status: nextStatus, isAvailable } : it
+      )
+    );
+  }
+
   async function requestItem(id: string) {
     try {
       setBusyId(id);
 
-      const res = await fetch(`/api/items/${id}`, { method: "PATCH" });
-      const data = await res.json().catch(() => null);
+      const data = await patchItem(id, "request");
+      if (!data) return;
 
-      if (!res.ok) {
-        alert(`Request failed (${res.status})\n${JSON.stringify(data)}`);
-        return;
-      }
+      // Local update so you see change instantly
+      updateLocal(id, "REQUESTED", false);
 
-      // remove from Available list immediately
+      // On Available page, remove it (optional)
       setList((prev) => prev.filter((it) => it.id !== id));
+
+      router.refresh();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function approveBorrow(id: string) {
+    try {
+      setBusyId(id);
+
+      const data = await patchItem(id, "approve");
+      if (!data) return;
+
+      // Local update (so you see it become BORROWED)
+      updateLocal(id, "BORROWED", false);
+
+      // On Requests page, remove it (so it disappears)
+      setList((prev) => prev.filter((it) => it.id !== id));
+
+      router.refresh();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function cancelRequest(id: string) {
+    try {
+      setBusyId(id);
+
+      const data = await patchItem(id, "cancel");
+      if (!data) return;
+
+      updateLocal(id, "AVAILABLE", true);
+
+      // On Requests page, remove it
+      setList((prev) => prev.filter((it) => it.id !== id));
+
+      router.refresh();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function returnItem(id: string) {
+    try {
+      setBusyId(id);
+
+      const data = await patchItem(id, "return");
+      if (!data) return;
+
+      updateLocal(id, "AVAILABLE", true);
+
+      // On Borrowed page, remove it
+      setList((prev) => prev.filter((it) => it.id !== id));
+
       router.refresh();
     } finally {
       setBusyId(null);
@@ -34,7 +121,6 @@ export default function ItemsClient({ items }: { items: Item[] }) {
   }
 
   async function deleteItem(id: string) {
-    console.log("DELETE CLICKED, id =", id);
     const ok = confirm("Delete this item?");
     if (!ok) return;
 
@@ -45,11 +131,18 @@ export default function ItemsClient({ items }: { items: Item[] }) {
       setBusyId(id);
 
       const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
-      const data = await res.json().catch(() => null);
+      const text = await res.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = text;
+      }
 
       if (!res.ok) {
         if (toRestore) setList((prev) => [toRestore, ...prev]);
-        alert(`Delete failed (${res.status})\n${JSON.stringify(data)}`);
+        console.error("DELETE failed:", { status: res.status, data });
+        alert(`Delete failed (${res.status})\n${JSON.stringify(data, null, 2)}`);
         return;
       }
 
@@ -61,44 +154,75 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
   return (
     <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-      {list.map((it) => (
-        <li key={it.id} className="rounded-xl border p-4">
-          <div className="text-xs text-zinc-500">{it.category}</div>
-          <div className="mt-1 text-lg font-semibold">{it.title}</div>
+      {list.map((it) => {
+        const status = it.status ?? "AVAILABLE";
+        const isBusy = busyId === it.id;
 
-          {it.description ? (
-            <p className="mt-2 text-sm text-zinc-600">{it.description}</p>
-          ) : null}
+        return (
+          <li key={it.id} className="rounded-xl border p-4">
+            <div className="text-xs text-zinc-500">{it.category}</div>
+            <div className="mt-1 text-lg font-semibold">{it.title}</div>
 
-          <div className="mt-2 text-xs font-medium text-blue-600">
-            Status: {it.status ?? "AVAILABLE"}
-          </div>
+            {it.description ? (
+              <p className="mt-2 text-sm text-zinc-600">{it.description}</p>
+            ) : null}
 
-          <div className="mt-4 flex gap-2">
-            {(it.status ?? "AVAILABLE") === "AVAILABLE" ? (
+            <div className="mt-2 text-xs font-medium text-blue-600">
+              Status: {status}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {status === "AVAILABLE" ? (
+                <button
+                  onClick={() => requestItem(it.id)}
+                  disabled={isBusy}
+                  className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
+                >
+                  Request to Borrow
+                </button>
+              ) : null}
+
+              {status === "REQUESTED" ? (
+                <>
+                  <button
+                    onClick={() => approveBorrow(it.id)}
+                    disabled={isBusy}
+                    className="rounded-md bg-black px-3 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-60"
+                  >
+                    Approve → Borrowed
+                  </button>
+
+                  <button
+                    onClick={() => cancelRequest(it.id)}
+                    disabled={isBusy}
+                    className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
+                  >
+                    Cancel Request
+                  </button>
+                </>
+              ) : null}
+
+              {status === "BORROWED" ? (
+                <button
+                  onClick={() => returnItem(it.id)}
+                  disabled={isBusy}
+                  className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
+                >
+                  Mark as Returned
+                </button>
+              ) : null}
+
               <button
-                onClick={() => requestItem(it.id)}
-                disabled={busyId === it.id}
-                className="rounded-md border px-3 py-2 text-sm hover:bg-zinc-50 disabled:opacity-60"
+                onClick={() => deleteItem(it.id)}
+                disabled={isBusy}
+                className="rounded-md border border-red-500 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-60"
               >
-                Request to Borrow
+                Delete
               </button>
-            ) : (
-              <span className="rounded-md border px-3 py-2 text-sm text-zinc-500">
-                {it.status}
-              </span>
-            )}
-
-            <button
-              onClick={() => deleteItem(it.id)}
-              disabled={busyId === it.id}
-              className="rounded-md border border-red-500 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-60"
-            >
-              Delete
-            </button>
-          </div>
-        </li>
-      ))}
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }
