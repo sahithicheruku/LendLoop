@@ -1,26 +1,33 @@
-// app/items/page.tsx
 import ItemsClient from "./ItemsClient";
 import Link from "next/link";
 import type { Item } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"; // important
+
+function getBaseUrl() {
+  // Vercel provides this automatically in production/preview
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+
+  // Your manual fallback
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+
+  // Local fallback
+  return "http://localhost:3000";
+}
 
 async function getItems(): Promise<Item[]> {
-  const base =
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
-      : process.env.NEXT_PUBLIC_APP_URL;
-
-  if (!base) {
-    // If env var is missing on Vercel, return empty safely
-    return [];
-  }
+  const base = getBaseUrl();
 
   const res = await fetch(`${base}/api/items?status=AVAILABLE`, {
     cache: "no-store",
   });
 
-  if (!res.ok) return [];
+  if (!res.ok) {
+    // Helpful debugging (will show in Vercel logs)
+    console.error("GET /api/items failed:", res.status, await res.text());
+    return [];
+  }
+
   return res.json();
 }
 
