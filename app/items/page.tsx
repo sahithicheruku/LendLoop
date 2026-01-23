@@ -1,13 +1,20 @@
+// app/items/page.tsx
 import ItemsClient from "./ItemsClient";
 import Link from "next/link";
 import type { Item } from "@/lib/types";
-import { headers } from "next/headers";
+
+export const dynamic = "force-dynamic";
 
 async function getItems(): Promise<Item[]> {
-  const h = await headers();
-  const host = h.get("host");
-  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
-  const base = `${protocol}://${host}`;
+  const base =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000"
+      : process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!base) {
+    // If env var is missing on Vercel, return empty safely
+    return [];
+  }
 
   const res = await fetch(`${base}/api/items?status=AVAILABLE`, {
     cache: "no-store",
@@ -31,7 +38,7 @@ export default async function ItemsPage() {
           >
             ← Back to Home
           </Link>
-          
+
           <div className="flex gap-3">
             <Link
               href="/items/requests"
@@ -64,24 +71,29 @@ export default async function ItemsPage() {
               Available Items
             </h1>
             <p className="mt-3 max-w-2xl text-base text-[#57534e]">
-              Browse items from your community. Found something you need? Send a request and coordinate pickup with the owner.
+              Browse items from your community. Found something you need? Send a
+              request and coordinate pickup with the owner.
             </p>
           </div>
 
           {/* Quick Info Cards */}
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg border border-[#e7e5e4] bg-gradient-to-br from-[#fef3c7] to-white p-5">
-              <div className="text-sm font-semibold text-[#78350f]">Available Now</div>
+              <div className="text-sm font-semibold text-[#78350f]">
+                Available Now
+              </div>
               <div className="mt-2 text-3xl font-extrabold text-[#92400e]">
                 {items.length}
               </div>
               <div className="mt-1 text-sm text-[#78716c]">
-                {items.length === 1 ? 'item ready' : 'items ready'} to borrow
+                {items.length === 1 ? "item ready" : "items ready"} to borrow
               </div>
             </div>
 
             <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
-              <div className="text-sm font-semibold text-[#57534e]">💡 Quick Tip</div>
+              <div className="text-sm font-semibold text-[#57534e]">
+                💡 Quick Tip
+              </div>
               <div className="mt-2 text-base font-bold text-[#2d1810]">
                 Check descriptions
               </div>
@@ -91,7 +103,9 @@ export default async function ItemsPage() {
             </div>
 
             <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
-              <div className="text-sm font-semibold text-[#57534e]">🤝 Be Respectful</div>
+              <div className="text-sm font-semibold text-[#57534e]">
+                🤝 Be Respectful
+              </div>
               <div className="mt-2 text-base font-bold text-[#2d1810]">
                 Return on time
               </div>
@@ -109,9 +123,7 @@ export default async function ItemsPage() {
               Browse Items {items.length > 0 && `(${items.length})`}
             </h2>
             {items.length > 0 && (
-              <p className="text-sm text-[#78716c]">
-                Updated in real-time
-              </p>
+              <p className="text-sm text-[#78716c]">Updated in real-time</p>
             )}
           </div>
 
@@ -123,7 +135,8 @@ export default async function ItemsPage() {
                   No items available yet
                 </h3>
                 <p className="mt-3 text-sm text-[#78716c]">
-                  Be the first to share something from your garage, closet, or shed. Help build the community!
+                  Be the first to share something from your garage, closet, or
+                  shed. Help build the community!
                 </p>
                 <Link
                   href="/items/new"
