@@ -9,13 +9,9 @@ type Action = "request" | "approve" | "return" | "cancel";
 export default function ItemsClient({ items }: { items: Item[] }) {
   const router = useRouter();
 
-  // ✅ safer init (handles undefined/empty during hydration)
   const [list, setList] = useState<Item[]>(() => items ?? []);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  // ✅ IMPORTANT FIX:
-  // Only overwrite local list when server sends REAL data (non-empty).
-  // Prevents list becoming [] on refresh/hydration and staying blank.
   useEffect(() => {
     if (items && items.length > 0) {
       setList(items);
@@ -46,7 +42,11 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     return data;
   }
 
-  function updateLocal(id: string, nextStatus: Item["status"], isAvailable: boolean) {
+  function updateLocal(
+    id: string,
+    nextStatus: Item["status"],
+    isAvailable: boolean
+  ) {
     setList((prev) =>
       prev.map((it) =>
         it.id === id ? { ...it, status: nextStatus, isAvailable } : it
@@ -175,7 +175,6 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     );
   }
 
-  // ✅ Show message instead of blank screen
   if (!list || list.length === 0) {
     return (
       <div className="rounded-lg border-2 border-dashed border-[#e7e5e4] bg-white p-10 text-center text-sm text-[#78716c]">
@@ -185,86 +184,95 @@ export default function ItemsClient({ items }: { items: Item[] }) {
   }
 
   return (
-    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {list.map((it) => {
-        const status = it.status ?? "AVAILABLE";
-        const isBusy = busyId === it.id;
+    <>
+      {/* 🔴 DEBUG LINE — REMOVE AFTER TEST */}
+      <p className="mb-3 text-sm text-red-600">
+        DEBUG → props items: {items?.length ?? 0} | local list:{" "}
+        {list?.length ?? 0}
+      </p>
 
-        return (
-          <li
-            key={it.id}
-            className="group rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm transition hover:border-[#d97706] hover:shadow-md"
-          >
-            <div className="flex items-start justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wide text-[#78716c]">
-                {it.category || "Uncategorized"}
-              </span>
-              {getStatusBadge(status)}
-            </div>
+      <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {list.map((it) => {
+          const status = it.status ?? "AVAILABLE";
+          const isBusy = busyId === it.id;
 
-            <h3 className="mt-3 text-xl font-bold text-[#1c1917] group-hover:text-[#d97706] transition">
-              {it.title}
-            </h3>
+          return (
+            <li
+              key={it.id}
+              className="group rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm transition hover:border-[#d97706] hover:shadow-md"
+            >
+              <div className="flex items-start justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-[#78716c]">
+                  {it.category || "Uncategorized"}
+                </span>
+                {getStatusBadge(status)}
+              </div>
 
-            {it.description && (
-              <p className="mt-2 text-sm leading-relaxed text-[#57534e] line-clamp-2">
-                {it.description}
-              </p>
-            )}
+              <h3 className="mt-3 text-xl font-bold text-[#1c1917] group-hover:text-[#d97706] transition">
+                {it.title}
+              </h3>
 
-            <div className="mt-5 flex flex-col gap-2">
-              {status === "AVAILABLE" && (
-                <button
-                  onClick={() => requestItem(it.id)}
-                  disabled={isBusy}
-                  className="rounded-md bg-[#d97706] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b45309] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isBusy ? "Requesting..." : "Request to Borrow"}
-                </button>
+              {it.description && (
+                <p className="mt-2 text-sm leading-relaxed text-[#57534e] line-clamp-2">
+                  {it.description}
+                </p>
               )}
 
-              {status === "REQUESTED" && (
-                <div className="flex gap-2">
+              <div className="mt-5 flex flex-col gap-2">
+                {status === "AVAILABLE" && (
                   <button
-                    onClick={() => approveBorrow(it.id)}
+                    onClick={() => requestItem(it.id)}
                     disabled={isBusy}
-                    className="flex-1 rounded-md bg-[#2d1810] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1c1410] disabled:opacity-50"
+                    className="rounded-md bg-[#d97706] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b45309] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isBusy ? "Approving..." : "Approve"}
+                    {isBusy ? "Requesting..." : "Request to Borrow"}
                   </button>
+                )}
 
+                {status === "REQUESTED" && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => approveBorrow(it.id)}
+                      disabled={isBusy}
+                      className="flex-1 rounded-md bg-[#2d1810] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1c1410] disabled:opacity-50"
+                    >
+                      {isBusy ? "Approving..." : "Approve"}
+                    </button>
+
+                    <button
+                      onClick={() => cancelRequest(it.id)}
+                      disabled={isBusy}
+                      className="flex-1 rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2.5 text-sm font-semibold text-[#2d1810] transition hover:border-[#78716c] disabled:opacity-50"
+                    >
+                      {isBusy ? "Canceling..." : "Cancel"}
+                    </button>
+                  </div>
+                )}
+
+                {status === "BORROWED" && (
                   <button
-                    onClick={() => cancelRequest(it.id)}
+                    onClick={() => returnItem(it.id)}
                     disabled={isBusy}
-                    className="flex-1 rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2.5 text-sm font-semibold text-[#2d1810] transition hover:border-[#78716c] disabled:opacity-50"
+                    className="rounded-md bg-[#d97706] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b45309] disabled:opacity-50"
                   >
-                    {isBusy ? "Canceling..." : "Cancel"}
+                    {isBusy ? "Processing..." : "Mark as Returned"}
                   </button>
-                </div>
-              )}
+                )}
 
-              {status === "BORROWED" && (
                 <button
-                  onClick={() => returnItem(it.id)}
+                  onClick={() => deleteItem(it.id)}
                   disabled={isBusy}
-                  className="rounded-md bg-[#d97706] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b45309] disabled:opacity-50"
+                  className="rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:border-red-300 disabled:opacity-50"
                 >
-                  {isBusy ? "Processing..." : "Mark as Returned"}
+                  {isBusy ? "Deleting..." : "Delete Item"}
                 </button>
-              )}
-
-              <button
-                onClick={() => deleteItem(it.id)}
-                disabled={isBusy}
-                className="rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:border-red-300 disabled:opacity-50"
-              >
-                {isBusy ? "Deleting..." : "Delete Item"}
-              </button>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
+
 
