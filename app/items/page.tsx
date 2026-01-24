@@ -3,7 +3,9 @@ import Link from "next/link";
 import type { Item } from "@/lib/types";
 
 export const dynamic = "force-dynamic"; // important
+export const revalidate = 0;
 
+// ⛔ KEEP OR DELETE THIS FUNCTION — IT WILL NOT BE USED
 function getBaseUrl() {
   // Vercel provides this automatically in production/preview
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
@@ -16,9 +18,14 @@ function getBaseUrl() {
 }
 
 async function getItems(): Promise<Item[]> {
-  const base = getBaseUrl();
+  // ❌ OLD (problematic on Vercel)
+  // const base = getBaseUrl();
+  // const res = await fetch(`${base}/api/items?status=AVAILABLE`, {
+  //   cache: "no-store",
+  // });
 
-  const res = await fetch(`${base}/api/items?status=AVAILABLE`, {
+  // ✅ NEW (ONLY REQUIRED CHANGE)
+  const res = await fetch(`/api/items?status=AVAILABLE`, {
     cache: "no-store",
   });
 
@@ -161,3 +168,4 @@ export default async function ItemsPage() {
     </main>
   );
 }
+
