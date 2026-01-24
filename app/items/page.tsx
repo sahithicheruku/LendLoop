@@ -1,36 +1,26 @@
 import ItemsClient from "./ItemsClient";
 import Link from "next/link";
 import type { Item } from "@/lib/types";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic"; // important
 export const revalidate = 0;
 
-// ⛔ KEEP OR DELETE THIS FUNCTION — IT WILL NOT BE USED
-function getBaseUrl() {
-  // Vercel provides this automatically in production/preview
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-
-  // Your manual fallback
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-
-  // Local fallback
-  return "http://localhost:3000";
-}
-
 async function getItems(): Promise<Item[]> {
-  // ❌ OLD (problematic on Vercel)
-  // const base = getBaseUrl();
-  // const res = await fetch(`${base}/api/items?status=AVAILABLE`, {
-  //   cache: "no-store",
-  // });
+  // ✅ FIX: headers() must be awaited
+  const h = await headers();
+  const host = h.get("host");
 
-  // ✅ NEW (ONLY REQUIRED CHANGE)
-  const res = await fetch(`/api/items?status=AVAILABLE`, {
+  const origin =
+    host
+      ? `https://${host}`
+      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  const res = await fetch(`${origin}/api/items?status=AVAILABLE`, {
     cache: "no-store",
   });
 
   if (!res.ok) {
-    // Helpful debugging (will show in Vercel logs)
     console.error("GET /api/items failed:", res.status, await res.text());
     return [];
   }
