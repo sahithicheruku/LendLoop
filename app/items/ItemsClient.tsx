@@ -9,10 +9,18 @@ type Action = "request" | "approve" | "return" | "cancel";
 export default function ItemsClient({ items }: { items: Item[] }) {
   const router = useRouter();
 
-  const [list, setList] = useState<Item[]>(items);
+  // ✅ safer init (handles undefined/empty during hydration)
+  const [list, setList] = useState<Item[]>(() => items ?? []);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  useEffect(() => setList(items), [items]);
+  // ✅ IMPORTANT FIX:
+  // Only overwrite local list when server sends REAL data (non-empty).
+  // Prevents list becoming [] on refresh/hydration and staying blank.
+  useEffect(() => {
+    if (items && items.length > 0) {
+      setList(items);
+    }
+  }, [items]);
 
   async function patchItem(id: string, action: Action) {
     const res = await fetch(`/api/items/${id}`, {
@@ -129,37 +137,50 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     }
   }
 
-  // Helper to get status badge styling
   function getStatusBadge(status: Item["status"]) {
-    const statusMap: Record<string, { label: string; bg: string; text: string; icon: string }> = {
-      AVAILABLE: { 
-        label: "Available", 
-        bg: "bg-green-100", 
+    const statusMap: Record<
+      string,
+      { label: string; bg: string; text: string; icon: string }
+    > = {
+      AVAILABLE: {
+        label: "Available",
+        bg: "bg-green-100",
         text: "text-green-800",
-        icon: "✓"
+        icon: "✓",
       },
-      REQUESTED: { 
-        label: "Requested", 
-        bg: "bg-yellow-100", 
+      REQUESTED: {
+        label: "Requested",
+        bg: "bg-yellow-100",
         text: "text-yellow-800",
-        icon: "⏳"
+        icon: "⏳",
       },
-      BORROWED: { 
-        label: "Borrowed", 
-        bg: "bg-blue-100", 
+      BORROWED: {
+        label: "Borrowed",
+        bg: "bg-blue-100",
         text: "text-blue-800",
-        icon: "📦"
+        icon: "📦",
       },
     };
 
     const currentStatus = status || "AVAILABLE";
     const config = statusMap[currentStatus] || statusMap["AVAILABLE"];
-    
+
     return (
-      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${config.bg} ${config.text}`}>
+      <span
+        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${config.bg} ${config.text}`}
+      >
         <span>{config.icon}</span>
         {config.label}
       </span>
+    );
+  }
+
+  // ✅ Show message instead of blank screen
+  if (!list || list.length === 0) {
+    return (
+      <div className="rounded-lg border-2 border-dashed border-[#e7e5e4] bg-white p-10 text-center text-sm text-[#78716c]">
+        No available items to show.
+      </div>
     );
   }
 
@@ -170,11 +191,10 @@ export default function ItemsClient({ items }: { items: Item[] }) {
         const isBusy = busyId === it.id;
 
         return (
-          <li 
-            key={it.id} 
+          <li
+            key={it.id}
             className="group rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm transition hover:border-[#d97706] hover:shadow-md"
           >
-            {/* Category & Status */}
             <div className="flex items-start justify-between">
               <span className="text-xs font-semibold uppercase tracking-wide text-[#78716c]">
                 {it.category || "Uncategorized"}
@@ -182,19 +202,16 @@ export default function ItemsClient({ items }: { items: Item[] }) {
               {getStatusBadge(status)}
             </div>
 
-            {/* Title */}
             <h3 className="mt-3 text-xl font-bold text-[#1c1917] group-hover:text-[#d97706] transition">
               {it.title}
             </h3>
 
-            {/* Description */}
             {it.description && (
               <p className="mt-2 text-sm leading-relaxed text-[#57534e] line-clamp-2">
                 {it.description}
               </p>
             )}
 
-            {/* Actions */}
             <div className="mt-5 flex flex-col gap-2">
               {status === "AVAILABLE" && (
                 <button
@@ -236,7 +253,6 @@ export default function ItemsClient({ items }: { items: Item[] }) {
                 </button>
               )}
 
-              {/* Delete button - always shown but styled subtly */}
               <button
                 onClick={() => deleteItem(it.id)}
                 disabled={isBusy}
@@ -251,3 +267,4 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     </ul>
   );
 }
+
