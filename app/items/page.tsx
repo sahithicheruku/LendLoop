@@ -1,31 +1,24 @@
 import ItemsClient from "./ItemsClient";
 import Link from "next/link";
 import type { Item } from "@/lib/types";
-import { headers } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic"; // important
 export const revalidate = 0;
 
 async function getItems(): Promise<Item[]> {
-  // ✅ FIX: headers() must be awaited
-  const h = await headers();
-  const host = h.get("host");
+  try {
+    const items = await prisma.item.findMany({
+      where: { status: "AVAILABLE" },
+      orderBy: { createdAt: "desc" },
+    });
 
-  const origin =
-    host
-      ? `https://${host}`
-      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-  const res = await fetch(`${origin}/api/items?status=AVAILABLE`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    console.error("GET /api/items failed:", res.status, await res.text());
+    // Prisma returns the same shape as your Item type (id, title, etc.)
+    return items as unknown as Item[];
+  } catch (err) {
+    console.error("getItems prisma error:", err);
     return [];
   }
-
-  return res.json();
 }
 
 export default async function ItemsPage() {
@@ -158,4 +151,3 @@ export default async function ItemsPage() {
     </main>
   );
 }
-
