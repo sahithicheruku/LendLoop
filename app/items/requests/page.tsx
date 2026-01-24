@@ -1,22 +1,23 @@
 import Link from "next/link";
 import ItemsClient from "../ItemsClient";
 import type { Item } from "@/lib/types";
-import { headers } from "next/headers";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 async function getRequestedItems(): Promise<Item[]> {
-  const h = await headers();
-  const host = h.get("host");
+  try {
+    const items = await prisma.item.findMany({
+      where: { status: "REQUESTED" },
+      orderBy: { createdAt: "desc" },
+    });
 
-  // dev = http, production = https
-  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
-  const base = `${protocol}://${host}`;
-
-  const res = await fetch(`${base}/api/items?status=REQUESTED`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) return [];
-  return res.json();
+    return items as unknown as Item[];
+  } catch (err) {
+    console.error("getRequestedItems prisma error:", err);
+    return [];
+  }
 }
 
 export default async function RequestsPage() {
@@ -33,7 +34,7 @@ export default async function RequestsPage() {
           >
             ← Back to Available Items
           </Link>
-          
+
           <div className="flex gap-3">
             <Link
               href="/items/borrowed"
@@ -59,13 +60,14 @@ export default async function RequestsPage() {
             My Requests
           </h1>
           <p className="mt-3 max-w-2xl text-base text-[#92400e]">
-            Track items you've requested. Owners will review and approve your requests. You'll coordinate pickup details once approved.
+            Track items you've requested. Owners will review and approve your
+            requests. You'll coordinate pickup details once approved.
           </p>
-          
+
           {items.length > 0 && (
             <div className="mt-6 inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#78350f] shadow-sm">
               <span className="text-lg">⏳</span>
-              {items.length} pending {items.length === 1 ? 'request' : 'requests'}
+              {items.length} pending {items.length === 1 ? "request" : "requests"}
             </div>
           )}
         </div>
@@ -74,16 +76,22 @@ export default async function RequestsPage() {
         {items.length > 0 && (
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
-              <div className="text-sm font-semibold text-[#57534e]">⚡ What happens next?</div>
+              <div className="text-sm font-semibold text-[#57534e]">
+                ⚡ What happens next?
+              </div>
               <p className="mt-2 text-sm text-[#78716c]">
-                The item owner will review your request and either approve or decline it. Be patient!
+                The item owner will review your request and either approve or
+                decline it. Be patient!
               </p>
             </div>
-            
+
             <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
-              <div className="text-sm font-semibold text-[#57534e]">💬 Communication</div>
+              <div className="text-sm font-semibold text-[#57534e]">
+                💬 Communication
+              </div>
               <p className="mt-2 text-sm text-[#78716c]">
-                Once approved, coordinate pickup details directly with the owner via their contact info.
+                Once approved, coordinate pickup details directly with the owner
+                via their contact info.
               </p>
             </div>
           </div>
@@ -99,15 +107,26 @@ export default async function RequestsPage() {
                   No pending requests
                 </h3>
                 <p className="mt-3 text-sm text-[#78716c]">
-                  You haven't requested any items yet. Browse the catalog to find tools, books, or gear you need!
+                  You haven't requested any items yet. Browse the catalog to
+                  find tools, books, or gear you need!
                 </p>
                 <Link
                   href="/items"
                   className="mt-6 inline-flex items-center gap-2 rounded-md bg-[#d97706] px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#b45309]"
                 >
                   <span>Browse Available Items</span>
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
                   </svg>
                 </Link>
               </div>
