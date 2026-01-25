@@ -2,11 +2,11 @@
 
 LendLoop is a full-stack web application designed to help people share items within a local community. Users can list items they own, browse what others have shared, request to borrow items, approve or decline requests, and manage the complete borrowing lifecycle through a clean and intuitive interface.
 
-🔗 **Live Demo:** https://lend-loop-bay.vercel.app
+**Live Demo:** https://lend-loop-bay.vercel.app
 
 ---
 
-## 🚀 Features
+## Features
 
 ### Core Workflows
 - List items with title, description, and category
@@ -21,16 +21,16 @@ LendLoop is a full-stack web application designed to help people share items wit
 - Status-based item lifecycle with enforced transitions  
   `AVAILABLE → REQUESTED → BORROWED → AVAILABLE`
 - Server-side state validation to prevent invalid operations
-- Optimistic UI updates for instant user feedback
+- Optimistic UI updates for responsive user experience
 - Clear separation between server and client components
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - Next.js 14 (App Router)
-- React Server & Client Components
+- React Server and Client Components
 - TypeScript
 - Tailwind CSS
 
@@ -42,25 +42,25 @@ LendLoop is a full-stack web application designed to help people share items wit
 
 ### Deployment
 - Vercel (production hosting)
-- Git & GitHub (version control)
+- Git and GitHub (version control)
 - Automatic deployments from the main branch
 
 ---
 
-## 📦 API Overview
+## API Overview
 
 ### Items API
 - `GET /api/items?status=AVAILABLE` — Fetch items filtered by status
 - `POST /api/items` — Create a new item listing
 - `PATCH /api/items/[id]` — Update item status via actions  
-  **Supported actions:** `request`, `approve`, `return`, `cancel`
+  Supported actions: `request`, `approve`, `return`, `cancel`
 - `DELETE /api/items/[id]` — Remove an item from the platform
 
 The backend enforces valid state transitions and prevents invalid updates.
 
 ---
 
-## 🗄️ Data Model
+## Data Model
 
 ### Item Schema
 - `id` — Unique identifier (CUID)
@@ -76,19 +76,19 @@ Relational data is modeled using Prisma, with schema migrations managed via Pris
 
 ---
 
-## 🔒 Backend Logic
+## Backend Logic
 
 - State transitions validated at the API layer
 - Database operations protected against invalid updates
 - Prisma transactions ensure atomic status changes
-- Server Components handle data fetching; Client Components manage interactivity
+- Server Components handle data fetching; Client Components manage user interactions
 - Structured error handling with clear responses
 
 ---
 
-## 📈 What This Project Demonstrates
+## What This Project Demonstrates
 
-- End-to-end full-stack development using Next.js 14 (App Router)
+- End-to-end full-stack development using Next.js 14
 - RESTful API design with proper HTTP methods
 - Relational database modeling using Prisma and PostgreSQL
 - Server-side rendering with client-side hydration
@@ -98,7 +98,7 @@ Relational data is modeled using Prisma, with schema migrations managed via Pris
 
 ---
 
-## 🧪 Local Development
+## Local Development
 
 ```bash
 # Install dependencies
