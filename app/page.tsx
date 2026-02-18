@@ -1,4 +1,7 @@
 import Link from "next/link";
+import StatsStrip from "./components/StarsStrip";
+import TechBadges from "./components/TechBadges";
+import RecruiterFooterLinks from "./components/RecruiterFooterLinks";
 
 
 export default function HomePage() {
@@ -122,6 +125,8 @@ export default function HomePage() {
             </div>
           </aside>
         </section>
+<StatsStrip />
+<TechBadges />
 
         {/* How it Works */}
         <section className="mt-24">
@@ -214,6 +219,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+          <RecruiterFooterLinks />
         </footer>
       </div>
     </main>
