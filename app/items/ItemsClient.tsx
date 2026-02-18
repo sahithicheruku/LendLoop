@@ -185,11 +185,7 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
   return (
     <>
-      {/* 🔴 DEBUG LINE — REMOVE AFTER TEST */}
-      <p className="mb-3 text-sm text-red-600">
-        DEBUG → props items: {items?.length ?? 0} | local list:{" "}
-        {list?.length ?? 0}
-      </p>
+      
 
       <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((it) => {
