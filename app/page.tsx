@@ -1,5 +1,5 @@
 import Link from "next/link";
-import StatsStrip from "./components/StarsStrip";
+import StatsStrip from "./components/StatsStrip";
 import TechBadges from "./components/TechBadges";
 import RecruiterFooterLinks from "./components/RecruiterFooterLinks";
 
