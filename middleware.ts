@@ -1,16 +1,19 @@
 import { withAuth } from "next-auth/middleware";
 
 export default withAuth(
-  function middleware(req) {
-    // you can leave this empty; withAuth handles redirect
-  },
+  function middleware() {},
   {
     callbacks: {
-      authorized: ({ token }) => !!token, // logged in = allowed
+      authorized: ({ token }) => !!token,
     },
   }
 );
 
 export const config = {
-  matcher: ["/items/:path*", "/admin/:path*", "/dashboard/:path*"],
+  matcher: [
+    // protect only these pages (NOT /api)
+    "/items/:path*",
+    "/dashboard/:path*",
+    "/admin/:path*",
+  ],
 };
