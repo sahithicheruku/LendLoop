@@ -2,64 +2,57 @@ import ItemsClient from "./ItemsClient";
 import Link from "next/link";
 import type { Item } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
+import { ItemStatus } from "@prisma/client";
+import { getAuthSession } from "@/lib/auth";
+import Navigation from "@/app/components/Navigation";
 
-export const dynamic = "force-dynamic"; // important
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-async function getItems(): Promise<Item[]> {
+async function getItems(search: string, category: string): Promise<Item[]> {
   try {
     const items = await prisma.item.findMany({
-      where: { status: "AVAILABLE" },
+      where: {
+        status: ItemStatus.AVAILABLE,
+        ...(search ? { title: { contains: search, mode: "insensitive" } } : {}),
+        ...(category ? { category } : {}),
+      },
+      include: { owner: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     });
 
-    // Prisma returns the same shape as your Item type (id, title, etc.)
-    return items as unknown as Item[];
+    return items.map(({ owner, ...item }) => ({ ...item, ownerName: owner.name }));
   } catch (err) {
     console.error("getItems prisma error:", err);
     return [];
   }
 }
 
-export default async function ItemsPage() {
-  const items = await getItems();
+export default async function ItemsPage({ searchParams }: { searchParams: Promise<{ search?: string; category?: string }> }) {
+  const params = await searchParams;
+  const search = params.search?.trim() ?? "";
+  const category = params.category?.trim() ?? "";
+  const items = await getItems(search, category);
+  const session = await getAuthSession();
+  const categories = Array.from(new Set(items.map((item) => item.category))).sort();
 
   return (
     <main className="min-h-screen bg-[#faf8f5]">
       <div className="mx-auto max-w-6xl px-6 py-10">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <Link
-            href="/"
-            className="text-sm font-medium text-[#78716c] transition hover:text-[#d97706]"
-          >
-            ← Back to Home
-          </Link>
+        <Navigation />
 
-          <div className="flex gap-3">
-            <Link
-              href="/items/requests"
-              className="rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2 text-sm font-semibold text-[#2d1810] transition hover:border-[#d97706]"
-            >
-              My Requests
-            </Link>
-            <Link
-              href="/items/borrowed"
-              className="rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2 text-sm font-semibold text-[#2d1810] transition hover:border-[#d97706]"
-            >
-              Borrowed
-            </Link>
-            <Link
-              href="/items/new"
-              className="rounded-md bg-[#d97706] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#b45309]"
-            >
-              + Add Item
-            </Link>
-          </div>
-        </div>
+        <form className="mt-6 grid gap-3 rounded-lg border border-[#e7e5e4] bg-white p-4 sm:grid-cols-[1fr_12rem_auto]" method="get">
+          <label className="sr-only" htmlFor="search">Search items</label>
+          <input id="search" name="search" defaultValue={search} placeholder="Search by item name" className="rounded-md border-2 border-[#e7e5e4] px-4 py-2 text-sm focus:border-[#d97706] focus:outline-none" />
+          <label className="sr-only" htmlFor="category">Filter by category</label>
+          <select id="category" name="category" defaultValue={category} className="rounded-md border-2 border-[#e7e5e4] px-4 py-2 text-sm focus:border-[#d97706] focus:outline-none">
+            <option value="">All categories</option>
+            {categories.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+          <button type="submit" className="rounded-md bg-[#2d1810] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1c1410]">Search</button>
+        </form>
 
-        {/* Hero Section */}
-        <div className="rounded-lg bg-white border border-[#e7e5e4] p-8 shadow-sm">
+        <div className="mt-8 rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm sm:p-8">
           <div>
             <div className="inline-block rounded-full bg-[#fef3c7] px-3 py-1 text-xs font-semibold text-[#92400e] mb-3">
               Browse Catalog
@@ -89,7 +82,7 @@ export default async function ItemsPage() {
 
             <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
               <div className="text-sm font-semibold text-[#57534e]">
-                💡 Quick Tip
+                Quick Tip
               </div>
               <div className="mt-2 text-base font-bold text-[#2d1810]">
                 Check descriptions
@@ -101,7 +94,7 @@ export default async function ItemsPage() {
 
             <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
               <div className="text-sm font-semibold text-[#57534e]">
-                🤝 Be Respectful
+                Be Respectful
               </div>
               <div className="mt-2 text-base font-bold text-[#2d1810]">
                 Return on time
@@ -113,7 +106,6 @@ export default async function ItemsPage() {
           </div>
         </div>
 
-        {/* Items List */}
         <div className="mt-10">
           <div className="mb-6 flex items-end justify-between">
             <h2 className="text-2xl font-bold text-[#1c1917]">
@@ -127,24 +119,23 @@ export default async function ItemsPage() {
           {items.length === 0 ? (
             <div className="rounded-lg border-2 border-dashed border-[#e7e5e4] bg-white p-16 text-center">
               <div className="mx-auto max-w-sm">
-                <div className="text-5xl mb-4">📦</div>
+                <div aria-hidden="true" className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#fef3c7] text-lg text-[#92400e]">—</div>
                 <h3 className="text-xl font-bold text-[#2d1810]">
-                  No items available yet
+                  {search || category ? "No matching items" : "No items available yet"}
                 </h3>
                 <p className="mt-3 text-sm text-[#78716c]">
-                  Be the first to share something from your garage, closet, or
-                  shed. Help build the community!
+                  {search || category ? "Try a different search or category." : "Be the first to share something from your garage, closet, or shed."}
                 </p>
                 <Link
                   href="/items/new"
                   className="mt-6 inline-flex items-center gap-2 rounded-md bg-[#d97706] px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#b45309]"
                 >
-                  <span>+ List Your First Item</span>
+                  <span>List Your First Item</span>
                 </Link>
               </div>
             </div>
           ) : (
-            <ItemsClient items={items} />
+            <ItemsClient items={items} currentUserId={session?.user.id} />
           )}
         </div>
       </div>

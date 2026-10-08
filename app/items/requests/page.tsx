@@ -1,19 +1,23 @@
 import Link from "next/link";
-import ItemsClient from "../ItemsClient";
-import type { Item } from "@/lib/types";
 import { prisma } from "@/lib/prisma";
+import { getAuthSession } from "@/lib/auth";
+import { BorrowRequestStatus } from "@prisma/client";
+import Navigation from "@/app/components/Navigation";
+import RequestCards from "./RequestCards";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-async function getRequestedItems(): Promise<Item[]> {
+async function getRequestedItems() {
+  const session = await getAuthSession();
+  if (!session?.user.id) return [];
   try {
-    const items = await prisma.item.findMany({
-      where: { status: "REQUESTED" },
+    const requests = await prisma.borrowRequest.findMany({
+      where: { requesterId: session.user.id, status: BorrowRequestStatus.PENDING },
+      include: { item: { include: { owner: { select: { name: true, email: true } } } } },
       orderBy: { createdAt: "desc" },
     });
-
-    return items as unknown as Item[];
+    return requests;
   } catch (err) {
     console.error("getRequestedItems prisma error:", err);
     return [];
@@ -21,138 +25,43 @@ async function getRequestedItems(): Promise<Item[]> {
 }
 
 export default async function RequestsPage() {
-  const items = await getRequestedItems();
+  const requests = await getRequestedItems();
+  const session = await getAuthSession();
+  const history = session?.user.id ? await prisma.borrowRequest.findMany({
+    where: { requesterId: session.user.id, status: { in: [BorrowRequestStatus.DECLINED, BorrowRequestStatus.CANCELLED, BorrowRequestStatus.RETURNED] } },
+    include: { item: true },
+    orderBy: { updatedAt: "desc" },
+  }) : [];
 
   return (
     <main className="min-h-screen bg-[#faf8f5]">
       <div className="mx-auto max-w-6xl px-6 py-10">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <Link
-            href="/items"
-            className="text-sm font-medium text-[#78716c] transition hover:text-[#d97706]"
-          >
-            ← Back to Available Items
-          </Link>
-
-          <div className="flex gap-3">
-            <Link
-              href="/items/borrowed"
-              className="rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2 text-sm font-semibold text-[#2d1810] transition hover:border-[#d97706]"
-            >
-              Borrowed
-            </Link>
-            <Link
-              href="/items/new"
-              className="rounded-md bg-[#d97706] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#b45309]"
-            >
-              + Add Item
-            </Link>
-          </div>
+        <Navigation />
+        <div className="mb-8 mt-8">
+          <div className="text-xs font-semibold uppercase tracking-wide text-[#92400e]">Requests</div>
+          <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-[#1c1917]">My Requests</h1>
+          <p className="mt-2 text-[#78716c]">Track the items you&apos;ve requested and their current status.</p>
         </div>
-
-        {/* Page Header */}
-        <div className="rounded-lg border-2 border-[#d97706] bg-gradient-to-br from-[#fef3c7] to-[#fed7aa] p-8 shadow-md">
-          <div className="inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#92400e] mb-3">
-            Pending Requests
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-[#78350f]">
-            My Requests
-          </h1>
-          <p className="mt-3 max-w-2xl text-base text-[#92400e]">
-            Track items you've requested. Owners will review and approve your
-            requests. You'll coordinate pickup details once approved.
-          </p>
-
-          {items.length > 0 && (
-            <div className="mt-6 inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#78350f] shadow-sm">
-              <span className="text-lg">⏳</span>
-              {items.length} pending {items.length === 1 ? "request" : "requests"}
-            </div>
-          )}
-        </div>
-
-        {/* Info Cards */}
-        {items.length > 0 && (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
-              <div className="text-sm font-semibold text-[#57534e]">
-                ⚡ What happens next?
-              </div>
-              <p className="mt-2 text-sm text-[#78716c]">
-                The item owner will review your request and either approve or
-                decline it. Be patient!
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
-              <div className="text-sm font-semibold text-[#57534e]">
-                💬 Communication
-              </div>
-              <p className="mt-2 text-sm text-[#78716c]">
-                Once approved, coordinate pickup details directly with the owner
-                via their contact info.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Items List */}
         <div className="mt-10">
-          {items.length === 0 ? (
-            <div className="rounded-lg border-2 border-dashed border-[#e7e5e4] bg-white p-16 text-center">
-              <div className="mx-auto max-w-sm">
-                <div className="text-5xl mb-4">🔍</div>
-                <h3 className="text-xl font-bold text-[#2d1810]">
-                  No pending requests
-                </h3>
-                <p className="mt-3 text-sm text-[#78716c]">
-                  You haven't requested any items yet. Browse the catalog to
-                  find tools, books, or gear you need!
-                </p>
-                <Link
-                  href="/items"
-                  className="mt-6 inline-flex items-center gap-2 rounded-md bg-[#d97706] px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#b45309]"
-                >
-                  <span>Browse Available Items</span>
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
-                </Link>
-              </div>
+          {requests.length === 0 ? (
+            <div className="rounded-lg border border-[#e7e5e4] bg-white p-8 text-center shadow-sm">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#fef3c7] text-xl text-[#92400e]">?</div>
+              <h3 className="mt-4 text-lg font-bold text-[#2d1810]">No pending requests</h3>
+              <p className="mt-2 text-sm text-[#78716c]">Browse the catalog to find something useful to borrow.</p>
+              <Link href="/items" className="mt-5 inline-flex rounded-md bg-[#d97706] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#b45309]">Browse Items</Link>
             </div>
           ) : (
             <>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-[#1c1917]">
-                  Pending Requests ({items.length})
-                </h2>
-                <p className="mt-2 text-sm text-[#78716c]">
-                  Waiting for owner approval
-                </p>
-              </div>
-              <ItemsClient items={items} />
+              <h2 className="mb-4 text-2xl font-bold text-[#1c1917]">Pending Requests ({requests.length})</h2>
+              <RequestCards requests={requests} />
             </>
           )}
         </div>
+        {history.length > 0 && <section className="mt-8 rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm"><h2 className="mb-4 text-2xl font-bold text-[#1c1917]">Request History</h2><ul className="divide-y divide-[#e7e5e4]">{history.map((request) => <li key={request.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><span className="font-medium text-[#2d1810]">{request.item.title}</span><span className="rounded-full bg-[#f5f5f4] px-3 py-1 text-xs font-semibold capitalize text-[#57534e]">{request.status.toLowerCase()}</span></li>)}</ul></section>}
       </div>
     </main>
   );
 }
-
-
-
-
-
-
 

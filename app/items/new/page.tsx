@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Navigation from "@/app/components/Navigation";
 
 export default function NewItemPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +22,7 @@ export default function NewItemPage() {
     const res = await fetch("/api/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, category }),
+      body: JSON.stringify({ title, description, category, imageUrl: imageUrl || null }),
     });
 
     setLoading(false);
@@ -49,36 +51,16 @@ export default function NewItemPage() {
   return (
     <main className="min-h-screen bg-[#faf8f5]">
       <div className="mx-auto max-w-2xl px-6 py-10">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/items"
-            className="text-sm font-medium text-[#78716c] transition hover:text-[#d97706]"
-          >
-            ← Back to Available Items
-          </Link>
-        </div>
-
-        {/* Page Title */}
-        <div className="rounded-lg border-2 border-[#d97706] bg-gradient-to-br from-[#fef3c7] to-[#fed7aa] p-8 shadow-md">
-          <div className="inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#92400e] mb-3">
-            List an Item
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-[#78350f]">
-            Share Something You Own
-          </h1>
-          <p className="mt-3 text-base text-[#92400e]">
-            Add an item you're willing to lend to your community. It takes less than a minute!
-          </p>
-        </div>
+        <Navigation />
+        <div className="mb-8 mt-8"><div className="text-xs font-semibold uppercase tracking-wide text-[#92400e]">List an item</div><h1 className="mt-2 text-4xl font-extrabold tracking-tight text-[#1c1917]">Share Something You Own</h1><p className="mt-2 text-[#78716c]">Add an item you&apos;re willing to lend to your community.</p></div>
 
         {/* Tips Card */}
         <div className="mt-6 rounded-lg border border-[#e7e5e4] bg-white p-6">
-          <h2 className="text-sm font-bold text-[#2d1810]">💡 Quick Tips</h2>
+          <h2 className="text-sm font-bold text-[#2d1810]">Quick Tips</h2>
           <ul className="mt-3 space-y-2 text-sm text-[#57534e]">
             <li className="flex gap-2">
               <span className="text-[#d97706]">•</span>
-              <span>Be specific with titles (e.g., "DeWalt Cordless Drill" vs "Drill")</span>
+              <span>Be specific with titles (e.g., &quot;DeWalt Cordless Drill&quot; vs &quot;Drill&quot;)</span>
             </li>
             <li className="flex gap-2">
               <span className="text-[#d97706]">•</span>
@@ -171,6 +153,12 @@ export default function NewItemPage() {
               placeholder="Or type your own category"
               required
             />
+          </div>
+
+          <div>
+            <label htmlFor="imageUrl" className="block text-sm font-bold text-[#2d1810]">Image URL <span className="font-normal text-[#78716c]">(optional)</span></label>
+            <p className="mt-1 text-xs text-[#78716c]">Add a direct image URL for the item.</p>
+            <input id="imageUrl" type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/item-photo.jpg" className="mt-2 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-3 text-[#1c1917] placeholder:text-[#a8a29e] focus:border-[#d97706] focus:outline-none" />
           </div>
 
           {/* Error message */}

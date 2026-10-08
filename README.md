@@ -1,119 +1,107 @@
-# LendLoop — Community Item Lending Platform
+# LendLoop
 
-LendLoop is a full-stack web application designed to help people share items within a local community. Users can list items they own, browse what others have shared, request to borrow items, approve or decline requests, and manage the complete borrowing lifecycle through a clean and intuitive interface.
+LendLoop is a community lending platform where people can list items, request things to borrow, approve lending requests, and manage returns.
 
-**Live Demo:** https://lend-loop-bay.vercel.app
+## Overview
 
----
+LendLoop replaces one-off borrowing conversations with a simple lending workflow. An authenticated user lists an item, another user requests it, the owner approves or declines the request, and the approved borrower returns the item when finished.
 
 ## Features
 
-### Core Workflows
-- List items with title, description, and category
-- Browse available items in the community
-- Request to borrow items from other users
-- Approve or decline borrowing requests
-- Track items you have borrowed
-- Mark items as returned when done
-- Remove items from the platform
-
-### Platform Highlights
-- Status-based item lifecycle with enforced transitions  
-  `AVAILABLE → REQUESTED → BORROWED → AVAILABLE`
-- Server-side state validation to prevent invalid operations
-- Optimistic UI updates for responsive user experience
-- Clear separation between server and client components
-
----
+- Google sign-in with NextAuth
+- User-owned item listings
+- Available-item browsing with title search and category filtering
+- Optional image URLs with local placeholders
+- Borrow requests with pending, approved, declined, cancelled, and returned states
+- Owner approval, decline, and deletion controls
+- Borrower return flow
+- Server-side authorization for all mutations
+- User-specific dashboard sections for owned, incoming, requested, and borrowed items
 
 ## Tech Stack
 
-### Frontend
-- Next.js 14 (App Router)
-- React Server and Client Components
+- Next.js 16.1.1 App Router
+- React 19.2.3
 - TypeScript
-- Tailwind CSS
+- Tailwind CSS 4
+- NextAuth 4.24.13 with Google OAuth
+- Prisma 5.22.0
+- PostgreSQL
+- Vercel-compatible deployment
 
-### Backend
-- Next.js API Routes (RESTful design)
-- Prisma ORM
-- PostgreSQL (hosted on Neon)
-- Server-side input and state validation
+## Architecture
 
-### Deployment
-- Vercel (production hosting)
-- Git and GitHub (version control)
-- Automatic deployments from the main branch
+The application uses Next.js App Router server components for authenticated data reads and client components for interactive item actions. Prisma provides the PostgreSQL data layer. NextAuth manages Google OAuth and JWT sessions, with typed session user IDs.
 
----
+Ownership and authorization are enforced on the server. `Item.ownerId` identifies the user who listed an item. `BorrowRequest` connects an item to its requester and stores the request lifecycle independently from the item’s aggregate status.
 
-## API Overview
+## Lending Workflow
 
-### Items API
-- `GET /api/items?status=AVAILABLE` — Fetch items filtered by status
-- `POST /api/items` — Create a new item listing
-- `PATCH /api/items/[id]` — Update item status via actions  
-  Supported actions: `request`, `approve`, `return`, `cancel`
-- `DELETE /api/items/[id]` — Remove an item from the platform
+```text
+Available → Requested → Approved / Borrowed → Returned → Available
+```
 
-The backend enforces valid state transitions and prevents invalid updates.
-
----
-
-## Data Model
-
-### Item Schema
-- `id` — Unique identifier (CUID)
-- `title` — Item name
-- `description` — Optional item details
-- `category` — Item category for filtering
-- `status` — Current state (`AVAILABLE | REQUESTED | BORROWED`)
-- `isAvailable` — Boolean flag for quick availability checks
-- `createdAt` — Creation timestamp
-- `updatedAt` — Last modification timestamp
-
-Relational data is modeled using Prisma, with schema migrations managed via Prisma CLI.
-
----
-
-## Backend Logic
-
-- State transitions validated at the API layer
-- Database operations protected against invalid updates
-- Prisma transactions ensure atomic status changes
-- Server Components handle data fetching; Client Components manage user interactions
-- Structured error handling with clear responses
-
----
-
-## What This Project Demonstrates
-
-- End-to-end full-stack development using Next.js 14
-- RESTful API design with proper HTTP methods
-- Relational database modeling using Prisma and PostgreSQL
-- Server-side rendering with client-side hydration
-- Production deployment and environment configuration
-- State management across server–client boundaries
-- Type-safe development using TypeScript
-
----
+Requests may also end as `Declined` or `Cancelled`.
 
 ## Local Development
 
-```bash
-# Install dependencies
-npm install
+1. Clone the repository.
+2. Install dependencies:
 
-# Configure database connection
-# Create a .env file with:
-DATABASE_URL="your-postgresql-connection-string"
-DIRECT_URL="your-postgresql-direct-url"
+   ```bash
+   npm install
+   ```
 
-# Run database migrations
-npx prisma migrate dev
+3. Create `.env.local` from `.env.example` and configure PostgreSQL and Google OAuth values.
+4. Generate Prisma Client:
 
-# Generate Prisma Client
-npx prisma generate
+   ```bash
+   npx prisma generate
+   ```
 
-# Start development server
-npm run dev
+5. Run the development migration when the database is configured and the schema/data plan is approved:
+
+   ```bash
+   npx prisma migrate dev
+   ```
+
+6. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+## Environment Variables
+
+- `DATABASE_URL` — pooled PostgreSQL connection string.
+- `DIRECT_URL` — direct PostgreSQL connection string used by Prisma migrations.
+- `GOOGLE_CLIENT_ID` — Google OAuth client ID.
+- `GOOGLE_CLIENT_SECRET` — Google OAuth client secret.
+- `NEXTAUTH_SECRET` — secret used to sign NextAuth tokens.
+- `NEXTAUTH_URL` — application URL; use `http://localhost:3000` locally.
+
+Use placeholders from `.env.example`; never commit real credentials.
+
+## Security and Authorization
+
+- Item ownership is assigned from the authenticated session, never from client input.
+- Users cannot request their own items.
+- Only owners can approve, decline, or delete items.
+- Only request creators can cancel pending requests.
+- Authenticated mutations are protected by server-side session checks.
+- Dashboard queries are scoped to the authenticated user ID.
+
+## Screenshots / Demo
+
+The live demo and screenshots can be added when the deployment environment is configured. Suggested screenshot locations:
+
+- `docs/screenshots/dashboard.png`
+- `docs/screenshots/browse-items.png`
+- `docs/screenshots/request-flow.png`
+
+## Future Improvements
+
+- Image upload and storage
+- Notifications for request state changes
+- Expanded lending history
+- Optional borrower-owner messaging

@@ -1,34 +1,13 @@
 import Link from "next/link";
-import StatsStrip from "./components/StatsStrip";
-import TechBadges from "./components/TechBadges";
 import RecruiterFooterLinks from "./components/RecruiterFooterLinks";
+import Navigation from "./components/Navigation";
 
 
-export default function HomePage() {
+export default async function HomePage() {
   return (
     <main className="min-h-screen bg-[#faf8f5]">
       <div className="mx-auto max-w-6xl px-6 py-8">
-        {/* Top Nav */}
-        <header className="flex items-center justify-between">
-          <div className="text-xl font-bold tracking-tight text-[#2d1810]">
-            LendLoop
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/items"
-              className="px-5 py-2.5 text-sm font-medium text-[#2d1810] transition hover:text-[#8b6f47]"
-            >
-              Browse
-            </Link>
-            <Link
-              href="/items/new"
-              className="rounded-md bg-[#d97706] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b45309]"
-            >
-              Add Item
-            </Link>
-          </div>
-        </header>
+        <Navigation />
 
         {/* Hero - Asymmetric Layout */}
         <section className="mt-20 grid gap-12 lg:grid-cols-[1.2fr_1fr] lg:items-start">
@@ -113,7 +92,7 @@ export default function HomePage() {
                 Track everything
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-[#d6d3d1]">
-                See what you've borrowed, what you've lent out, and manage 
+                See what you&apos;ve borrowed, what you&apos;ve lent out, and manage 
                 all your requests in one place.
               </p>
               <Link
@@ -125,9 +104,6 @@ export default function HomePage() {
             </div>
           </aside>
         </section>
-<StatsStrip />
-<TechBadges />
-
         {/* How it Works */}
         <section className="mt-24">
           <div className="mb-10">
@@ -146,7 +122,7 @@ export default function HomePage() {
               </div>
               <h3 className="mt-5 text-lg font-bold text-[#2d1810]">List your stuff</h3>
               <p className="mt-3 text-sm leading-relaxed text-[#78716c]">
-                Add items you're willing to lend. Takes less than 60 seconds. 
+                Add items you&apos;re willing to lend. Takes less than 60 seconds. 
                 No fees, no hassle.
               </p>
             </div>

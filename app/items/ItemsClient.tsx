@@ -4,13 +4,22 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Item } from "@/lib/types";
 
-type Action = "request" | "approve" | "return" | "cancel";
+type Action = "request" | "approve" | "decline" | "return" | "cancel";
 
-export default function ItemsClient({ items }: { items: Item[] }) {
+export default function ItemsClient({
+  items,
+  ownerView = false,
+  currentUserId,
+}: {
+  items: Item[];
+  ownerView?: boolean;
+  currentUserId?: string;
+}) {
   const router = useRouter();
 
   const [list, setList] = useState<Item[]>(() => items ?? []);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (items && items.length > 0) {
@@ -26,7 +35,7 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     });
 
     const text = await res.text();
-    let data: any = null;
+    let data: unknown = null;
     try {
       data = text ? JSON.parse(text) : null;
     } catch {
@@ -34,32 +43,29 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     }
 
     if (!res.ok) {
+      setError(data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : `Update failed (${res.status})`);
       console.error("PATCH failed:", { status: res.status, data });
-      alert(`Update failed (${res.status})\n${JSON.stringify(data, null, 2)}`);
       return null;
     }
 
     return data;
   }
 
-  function updateLocal(
-    id: string,
-    nextStatus: Item["status"],
-    isAvailable: boolean
-  ) {
+  function updateLocal(id: string, nextStatus: Item["status"]) {
     setList((prev) =>
       prev.map((it) =>
-        it.id === id ? { ...it, status: nextStatus, isAvailable } : it
+        it.id === id ? { ...it, status: nextStatus } : it
       )
     );
   }
 
   async function requestItem(id: string) {
     try {
+      setError(null);
       setBusyId(id);
       const data = await patchItem(id, "request");
       if (!data) return;
-      updateLocal(id, "REQUESTED", false);
+      updateLocal(id, "REQUESTED");
       setList((prev) => prev.filter((it) => it.id !== id));
       router.refresh();
     } finally {
@@ -69,10 +75,11 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
   async function approveBorrow(id: string) {
     try {
+      setError(null);
       setBusyId(id);
       const data = await patchItem(id, "approve");
       if (!data) return;
-      updateLocal(id, "BORROWED", false);
+      updateLocal(id, "BORROWED");
       setList((prev) => prev.filter((it) => it.id !== id));
       router.refresh();
     } finally {
@@ -82,10 +89,25 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
   async function cancelRequest(id: string) {
     try {
+      setError(null);
       setBusyId(id);
       const data = await patchItem(id, "cancel");
       if (!data) return;
-      updateLocal(id, "AVAILABLE", true);
+      updateLocal(id, "AVAILABLE");
+      setList((prev) => prev.filter((it) => it.id !== id));
+      router.refresh();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function declineRequest(id: string) {
+    try {
+      setError(null);
+      setBusyId(id);
+      const data = await patchItem(id, "decline");
+      if (!data) return;
+      updateLocal(id, "AVAILABLE");
       setList((prev) => prev.filter((it) => it.id !== id));
       router.refresh();
     } finally {
@@ -95,10 +117,11 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
   async function returnItem(id: string) {
     try {
+      setError(null);
       setBusyId(id);
       const data = await patchItem(id, "return");
       if (!data) return;
-      updateLocal(id, "AVAILABLE", true);
+      updateLocal(id, "AVAILABLE");
       setList((prev) => prev.filter((it) => it.id !== id));
       router.refresh();
     } finally {
@@ -117,7 +140,7 @@ export default function ItemsClient({ items }: { items: Item[] }) {
       setBusyId(id);
       const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
       const text = await res.text();
-      let data: any = null;
+      let data: unknown = null;
       try {
         data = text ? JSON.parse(text) : null;
       } catch {
@@ -127,7 +150,7 @@ export default function ItemsClient({ items }: { items: Item[] }) {
       if (!res.ok) {
         if (toRestore) setList((prev) => [toRestore, ...prev]);
         console.error("DELETE failed:", { status: res.status, data });
-        alert(`Delete failed (${res.status})\n${JSON.stringify(data, null, 2)}`);
+        setError(data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : `Delete failed (${res.status})`);
         return;
       }
 
@@ -185,11 +208,15 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
   return (
     <>
-      
+      {error && (
+        <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </p>
+      )}
 
       <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((it) => {
-          const status = it.status ?? "AVAILABLE";
+          const status = it.status;
           const isBusy = busyId === it.id;
 
           return (
@@ -208,6 +235,14 @@ export default function ItemsClient({ items }: { items: Item[] }) {
                 {it.title}
               </h3>
 
+              {it.imageUrl ? (
+                <div role="img" aria-label={it.title} className="mt-4 h-40 w-full rounded-md bg-cover bg-center" style={{ backgroundImage: `url(${it.imageUrl})` }} />
+              ) : (
+                <div aria-label={`${it.title} placeholder image`} className="mt-4 flex h-40 w-full items-center justify-center rounded-md bg-[#fef3c7] text-4xl text-[#92400e]">📦</div>
+              )}
+
+              {it.ownerName && <p className="mt-3 text-xs text-[#78716c]">Listed by {it.ownerName}</p>}
+
               {it.description && (
                 <p className="mt-2 text-sm leading-relaxed text-[#57534e] line-clamp-2">
                   {it.description}
@@ -215,7 +250,7 @@ export default function ItemsClient({ items }: { items: Item[] }) {
               )}
 
               <div className="mt-5 flex flex-col gap-2">
-                {status === "AVAILABLE" && (
+                {status === "AVAILABLE" && it.ownerId !== currentUserId && (
                   <button
                     onClick={() => requestItem(it.id)}
                     disabled={isBusy}
@@ -227,20 +262,22 @@ export default function ItemsClient({ items }: { items: Item[] }) {
 
                 {status === "REQUESTED" && (
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => approveBorrow(it.id)}
-                      disabled={isBusy}
-                      className="flex-1 rounded-md bg-[#2d1810] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1c1410] disabled:opacity-50"
-                    >
-                      {isBusy ? "Approving..." : "Approve"}
-                    </button>
+                    {ownerView && <button onClick={() => approveBorrow(it.id)} disabled={isBusy} className="flex-1 rounded-md bg-[#2d1810] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1c1410] disabled:opacity-50">{isBusy ? "Approving..." : "Approve"}</button>}
 
                     <button
-                      onClick={() => cancelRequest(it.id)}
+                      onClick={() =>
+                        ownerView ? declineRequest(it.id) : cancelRequest(it.id)
+                      }
                       disabled={isBusy}
                       className="flex-1 rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2.5 text-sm font-semibold text-[#2d1810] transition hover:border-[#78716c] disabled:opacity-50"
                     >
-                      {isBusy ? "Canceling..." : "Cancel"}
+                      {isBusy
+                        ? ownerView
+                          ? "Declining..."
+                          : "Canceling..."
+                        : ownerView
+                          ? "Decline"
+                          : "Cancel"}
                     </button>
                   </div>
                 )}
@@ -255,13 +292,15 @@ export default function ItemsClient({ items }: { items: Item[] }) {
                   </button>
                 )}
 
-                <button
-                  onClick={() => deleteItem(it.id)}
-                  disabled={isBusy}
-                  className="rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:border-red-300 disabled:opacity-50"
-                >
-                  {isBusy ? "Deleting..." : "Delete Item"}
-                </button>
+                {it.ownerId === currentUserId && (
+                  <button
+                    onClick={() => deleteItem(it.id)}
+                    disabled={isBusy || status === "BORROWED"}
+                    className="rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:border-red-300 disabled:opacity-50"
+                  >
+                    {status === "BORROWED" ? "Currently Borrowed" : isBusy ? "Deleting..." : "Delete Item"}
+                  </button>
+                )}
               </div>
             </li>
           );
@@ -270,5 +309,3 @@ export default function ItemsClient({ items }: { items: Item[] }) {
     </>
   );
 }
-
-

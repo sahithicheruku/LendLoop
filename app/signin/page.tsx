@@ -1,9 +1,12 @@
 import Link from "next/link";
+import Navigation from "@/app/components/Navigation";
+import GoogleSignInButton from "./GoogleSignInButton";
 
 export default function SignInPage() {
   return (
     <main className="min-h-screen bg-[#faf8f5]">
       <div className="mx-auto max-w-lg px-6 py-20">
+        <Navigation />
         <Link href="/" className="text-sm font-semibold text-[#2d1810] hover:text-[#8b6f47]">
           ← Back to home
         </Link>
@@ -21,12 +24,7 @@ export default function SignInPage() {
             To browse items, request a borrow, and manage your dashboard, please sign in.
           </p>
 
-          <a
-            href="/api/auth/signin/google"
-            className="mt-8 flex w-full items-center justify-center gap-3 rounded-md bg-[#2d1810] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1c1410]"
-          >
-            Continue with Google
-          </a>
+          <GoogleSignInButton />
 
           <p className="mt-6 text-xs text-[#78716c]">
             By continuing, you agree to our{" "}

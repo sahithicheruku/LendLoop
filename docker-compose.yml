@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lendloop
+      POSTGRES_USER: lendloop_dev
+      POSTGRES_PASSWORD: lendloop_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - lendloop-postgres:/var/lib/postgresql/data
+
+volumes:
+  lendloop-postgres:

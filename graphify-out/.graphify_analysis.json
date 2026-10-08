@@ -1,0 +1,345 @@
+{
+  "communities": {
+    "0": [
+      "app_api_items_id_route",
+      "app_api_items_id_route_ctx",
+      "app_api_items_id_route_delete",
+      "app_api_items_id_route_patch",
+      "app_components_navigation",
+      "app_components_navigation_navigation",
+      "app_components_signoutbutton",
+      "app_components_signoutbutton_signoutbutton",
+      "app_dashboard_page",
+      "app_dashboard_page_dashboardpage",
+      "app_dashboard_page_dynamic",
+      "app_dashboard_page_getdashboarddata",
+      "app_dashboard_page_section",
+      "app_items_borrowed_page",
+      "app_items_borrowed_page_borrowedpage",
+      "app_items_borrowed_page_getborroweditems",
+      "app_items_itemsclient",
+      "app_items_itemsclient_action",
+      "app_items_page",
+      "app_items_page_dynamic",
+      "app_items_page_getitems",
+      "app_items_page_itemspage",
+      "app_items_page_revalidate",
+      "app_items_requests_page",
+      "app_items_requests_page_dynamic",
+      "app_items_requests_page_getrequesteditems",
+      "app_items_requests_page_requestspage",
+      "app_items_requests_page_revalidate",
+      "app_signin_page",
+      "app_signin_page_signinpage",
+      "lib_auth",
+      "lib_auth_getauthsession",
+      "lib_prisma",
+      "lib_prisma_globalforprisma",
+      "lib_prisma_prisma",
+      "lib_types",
+      "lib_types_borrowrequest",
+      "lib_types_item",
+      "lib_types_sessionuser"
+    ],
+    "1": [
+      "eslint",
+      "eslint_config_next",
+      "package_devdependencies",
+      "package_devdependencies_eslint",
+      "package_devdependencies_eslint_config_next",
+      "package_devdependencies_prisma",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_tailwindcss_postcss",
+      "package_devdependencies_ts_node",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_typescript",
+      "prisma",
+      "tailwindcss",
+      "tailwindcss_postcss",
+      "ts_node",
+      "types_node",
+      "types_react",
+      "types_react_dom",
+      "typescript"
+    ],
+    "2": [
+      "ref_dom",
+      "ref_dom_iterable",
+      "ref_esnext",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowjs",
+      "tsconfig_compileroptions_baseurl",
+      "tsconfig_compileroptions_esmoduleinterop",
+      "tsconfig_compileroptions_incremental",
+      "tsconfig_compileroptions_isolatedmodules",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_plugins",
+      "tsconfig_compileroptions_resolvejsonmodule",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_compileroptions_target"
+    ],
+    "3": [
+      "next",
+      "next_auth",
+      "next_auth_prisma_adapter",
+      "package_dependencies",
+      "package_dependencies_next",
+      "package_dependencies_next_auth",
+      "package_dependencies_next_auth_prisma_adapter",
+      "package_dependencies_prisma_client",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_zod",
+      "prisma_client",
+      "react",
+      "react_dom",
+      "zod"
+    ],
+    "4": [
+      "package",
+      "package_name",
+      "package_prisma",
+      "package_prisma_seed",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_dev",
+      "package_scripts_lint",
+      "package_scripts_postinstall",
+      "package_scripts_start",
+      "package_version"
+    ],
+    "5": [
+      "ref_mts",
+      "ref_next_dev_types_ts",
+      "ref_next_env_d_ts",
+      "ref_next_types_ts",
+      "ref_node_modules",
+      "ref_src_backup",
+      "ref_ts",
+      "ref_tsx",
+      "tsconfig",
+      "tsconfig_exclude",
+      "tsconfig_include"
+    ],
+    "6": [
+      "app_items_itemsclient_itemsclient",
+      "app_items_itemsclient_itemsclient_approveborrow",
+      "app_items_itemsclient_itemsclient_cancelrequest",
+      "app_items_itemsclient_itemsclient_declinerequest",
+      "app_items_itemsclient_itemsclient_deleteitem",
+      "app_items_itemsclient_itemsclient_getstatusbadge",
+      "app_items_itemsclient_itemsclient_patchitem",
+      "app_items_itemsclient_itemsclient_requestitem",
+      "app_items_itemsclient_itemsclient_returnitem",
+      "app_items_itemsclient_itemsclient_updatelocal"
+    ],
+    "7": [
+      "app_components_recruiterfooterlinks",
+      "app_components_recruiterfooterlinks_recruiterfooterlinks",
+      "app_items_new_page",
+      "app_items_new_page_newitempage",
+      "app_items_new_page_newitempage_onsubmit",
+      "app_page",
+      "app_page_homepage"
+    ],
+    "8": [
+      "app_api_items_route",
+      "app_api_items_route_allowed_status",
+      "app_api_items_route_allowedstatus",
+      "app_api_items_route_get",
+      "app_api_items_route_parsestatus",
+      "app_api_items_route_post"
+    ],
+    "9": [
+      "app_api_auth_nextauth_route",
+      "app_api_auth_nextauth_route_dynamic",
+      "app_api_auth_nextauth_route_handler",
+      "app_api_auth_nextauth_route_runtime",
+      "lib_auth_authoptions"
+    ],
+    "10": [
+      "types_next_auth_d",
+      "types_next_auth_d_jwt",
+      "types_next_auth_d_next_auth",
+      "types_next_auth_d_next_auth_jwt",
+      "types_next_auth_d_session"
+    ],
+    "11": [
+      "app_layout",
+      "app_layout_metadata",
+      "app_layout_rootlayout"
+    ],
+    "12": [
+      "prisma_seed",
+      "prisma_seed_main",
+      "prisma_seed_prisma"
+    ],
+    "13": [
+      "app_components_statsstrip",
+      "app_components_statsstrip_statsstrip"
+    ],
+    "14": [
+      "app_components_techbadges",
+      "app_components_techbadges_techbadges"
+    ],
+    "15": [
+      "eslint_config",
+      "eslint_config_eslintconfig"
+    ],
+    "16": [
+      "middleware",
+      "middleware_config"
+    ],
+    "17": [
+      "next_config",
+      "next_config_nextconfig"
+    ],
+    "18": [
+      "postcss_config",
+      "postcss_config_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.11875843454790823,
+    "1": 0.09523809523809523,
+    "2": 0.1,
+    "3": 0.13333333333333333,
+    "4": 0.16666666666666666,
+    "5": 0.18181818181818182,
+    "6": 0.4222222222222222,
+    "7": 0.2857142857142857,
+    "8": 0.4,
+    "9": 0.4,
+    "10": 0.4,
+    "11": 0.6666666666666666,
+    "12": 0.6666666666666666,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0
+  },
+  "gods": [
+    {
+      "id": "lib_auth_getauthsession",
+      "label": "getAuthSession()",
+      "degree": 19
+    },
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 17
+    },
+    {
+      "id": "app_items_itemsclient_itemsclient",
+      "label": "ItemsClient()",
+      "degree": 14
+    },
+    {
+      "id": "app_components_navigation_navigation",
+      "label": "Navigation()",
+      "degree": 9
+    },
+    {
+      "id": "lib_prisma_prisma",
+      "label": "prisma",
+      "degree": 8
+    },
+    {
+      "id": "tsconfig_include",
+      "label": "include",
+      "degree": 7
+    },
+    {
+      "id": "app_items_itemsclient_itemsclient_patchitem",
+      "label": "patchItem()",
+      "degree": 6
+    },
+    {
+      "id": "app_items_itemsclient_itemsclient_updatelocal",
+      "label": "updateLocal()",
+      "degree": 6
+    },
+    {
+      "id": "package_scripts",
+      "label": "scripts",
+      "degree": 6
+    },
+    {
+      "id": "lib_types_item",
+      "label": "Item",
+      "degree": 5
+    }
+  ],
+  "surprises": [
+    {
+      "source": "POST()",
+      "target": "getAuthSession()",
+      "source_files": [
+        "app/api/items/route.ts",
+        "lib/auth.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `POST()` unexpectedly reaches hub `getAuthSession()`"
+    },
+    {
+      "source": "PATCH()",
+      "target": "getAuthSession()",
+      "source_files": [
+        "app/api/items/[id]/route.ts",
+        "lib/auth.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; peripheral node `PATCH()` unexpectedly reaches hub `getAuthSession()`"
+    },
+    {
+      "source": "DELETE()",
+      "target": "getAuthSession()",
+      "source_files": [
+        "app/api/items/[id]/route.ts",
+        "lib/auth.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; peripheral node `DELETE()` unexpectedly reaches hub `getAuthSession()`"
+    },
+    {
+      "source": "GET()",
+      "target": "getAuthSession()",
+      "source_files": [
+        "app/api/items/route.ts",
+        "lib/auth.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "Navigation()",
+      "target": "getAuthSession()",
+      "source_files": [
+        "app/components/Navigation.tsx",
+        "lib/auth.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}
