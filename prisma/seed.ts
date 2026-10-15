@@ -1,6 +1,16 @@
-import { BorrowRequestStatus, ItemStatus, PrismaClient } from "@prisma/client";
+import { BorrowRequestStatus, ItemCondition, ItemStatus, NotificationType, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const demoCities = [["Plano", "TX"], ["Dallas", "TX"], ["Frisco", "TX"], ["Richardson", "TX"], ["Allen", "TX"], ["McKinney", "TX"]] as const;
+const demoCoordinates = [[33.0198, -96.6989], [32.7767, -96.7970], [33.1507, -96.8236], [32.9483, -96.7299], [33.1032, -96.6706], [33.1972, -96.6398]] as const;
+const demoConditions = [ItemCondition.NEW, ItemCondition.LIKE_NEW, ItemCondition.GOOD, ItemCondition.FAIR];
+function demoAvailability(index: number) {
+  const now = new Date();
+  if (index % 5 === 1) return { availableFrom: new Date(now.getTime() + 7 * 86400000), availableUntil: null };
+  if (index % 5 === 2) return { availableFrom: new Date(now.getTime() - 3 * 86400000), availableUntil: new Date(now.getTime() + 14 * 86400000) };
+  if (index % 5 === 3) return { availableFrom: null, availableUntil: new Date(now.getTime() + 10 * 86400000) };
+  return { availableFrom: null, availableUntil: null };
+}
 const demoUsers = ["Avery Stone", "Blake Rowan", "Casey North", "Drew Ellis", "Emery Vale", "Finley Hart", "Gray Morgan", "Harper Reed", "Indigo Lane", "Jordan West", "Kai Mercer", "Logan Brooks"];
 
 const itemData: [string, string, string, ItemStatus][] = [
@@ -78,15 +88,17 @@ const itemData: [string, string, string, ItemStatus][] = [
 
 async function seedSynthetic() {
   await prisma.borrowRequest.deleteMany();
+  await prisma.review.deleteMany();
   await prisma.item.deleteMany();
 
   const users = await Promise.all(demoUsers.map((name) => {
     const email = `${name.toLowerCase().replace(" ", ".")}@demo.invalid`;
     return prisma.user.upsert({ where: { email }, update: { name }, create: { name, email } });
   }));
+  await prisma.notification.deleteMany({ where: { userId: { in: users.map((user) => user.id) } } });
 
   const items = await Promise.all(itemData.map(([title, category, description, status], index) => prisma.item.create({
-    data: { title, category, description, status, ownerId: users[index % users.length].id },
+    data: { title, category, description, status, ownerId: users[index % users.length].id, city: demoCities[index % demoCities.length][0], region: demoCities[index % demoCities.length][1], latitude: demoCoordinates[index % demoCoordinates.length][0], longitude: demoCoordinates[index % demoCoordinates.length][1], condition: demoConditions[index % demoConditions.length], ...demoAvailability(index) },
   })));
 
   const requests: [number, number, BorrowRequestStatus][] = [
@@ -103,12 +115,17 @@ async function seedSynthetic() {
     [65, 2, BorrowRequestStatus.APPROVED], [66, 3, BorrowRequestStatus.DECLINED],
     [67, 4, BorrowRequestStatus.CANCELLED], [68, 5, BorrowRequestStatus.RETURNED],
   ];
+  const createdRequests = [];
   for (const [itemIndex, requesterIndex, status] of requests) {
     const item = items[itemIndex];
     const requester = users[requesterIndex];
     if (item.ownerId === requester.id) throw new Error(`Invalid self-request for ${item.title}`);
-    await prisma.borrowRequest.create({ data: { itemId: item.id, requesterId: requester.id, status } });
+    createdRequests.push(await prisma.borrowRequest.create({ data: { itemId: item.id, requesterId: requester.id, status } }));
   }
+  const returnedRequests = createdRequests.filter((request) => request.status === BorrowRequestStatus.RETURNED);
+  await prisma.review.createMany({ data: returnedRequests.map((request, index) => ({ requestId: request.id, reviewerId: request.requesterId, itemId: request.itemId, rating: index % 2 ? 4 : 5, comment: index % 2 ? "Smooth handoff and the item worked great." : "Exactly as described. Thanks!" })) });
+  await prisma.favorite.createMany({ data: users.flatMap((user, userIndex) => items.filter((item) => item.ownerId !== user.id).slice(userIndex, userIndex + 6).map((item) => ({ userId: user.id, itemId: item.id }))), skipDuplicates: true });
+  await prisma.notification.createMany({ data: users.flatMap((user, userIndex) => items.slice(userIndex, userIndex + 3).map((item, index) => ({ userId: user.id, itemId: item.id, type: [NotificationType.REQUEST_RECEIVED, NotificationType.REQUEST_APPROVED, NotificationType.ITEM_RETURNED][index], title: ["New borrow request", "Request approved", "Item returned"][index], message: [`Someone requested your ${item.title}.`, `Your request for ${item.title} was approved.`, `Your ${item.title} was marked as returned.`][index], readAt: index === 0 ? null : new Date() }))) });
   console.log(`Seeded ${users.length} demo users, ${items.length} items, and ${requests.length} requests.`);
 }
 
@@ -125,6 +142,8 @@ async function seedForRealUsers(emails: string[]) {
   const ownedTitles = ["Workshop Drill", "Projector", "Camping Tent", "Folding Chairs", "Stand Mixer", "DSLR Camera", "Tool Cart", "Camping Cooler"];
 
   // Remove only previous demo inventory and requests involving these demo users.
+  await prisma.favorite.deleteMany({ where: { userId: { in: realUsers.map((user) => user!.id) } } });
+  await prisma.notification.deleteMany({ where: { userId: { in: realUsers.map((user) => user!.id) } } });
   await prisma.borrowRequest.deleteMany({ where: { OR: [
     { requesterId: { in: realUsers.map((user) => user!.id) } },
     { item: { ownerId: { in: syntheticIds } } },
@@ -134,7 +153,7 @@ async function seedForRealUsers(emails: string[]) {
   await prisma.item.deleteMany({ where: { ownerId: { in: realUsers.map((user) => user!.id) }, title: { in: ownedTitles } } });
 
   const catalog = await Promise.all(itemData.slice(0, 62).map(([title, category, description, status], index) => prisma.item.create({
-    data: { title, category, description, status, ownerId: syntheticUsers[index % syntheticUsers.length].id },
+    data: { title, category, description, status, ownerId: syntheticUsers[index % syntheticUsers.length].id, city: demoCities[index % demoCities.length][0], region: demoCities[index % demoCities.length][1], latitude: demoCoordinates[index % demoCoordinates.length][0], longitude: demoCoordinates[index % demoCoordinates.length][1], condition: demoConditions[index % demoConditions.length], ...demoAvailability(index) },
   })));
   const catalogRequests: [number, BorrowRequestStatus][] = [
     [1, BorrowRequestStatus.PENDING], [4, BorrowRequestStatus.APPROVED], [7, BorrowRequestStatus.APPROVED],
@@ -159,12 +178,12 @@ async function seedForRealUsers(emails: string[]) {
       ["DSLR Camera", "Electronics", "Entry-level DSLR with an 18–55mm lens and padded bag.", ItemStatus.BORROWED],
       ["Tool Cart", "Tools", "Rolling tool cart with drawers for organizing household projects.", ItemStatus.REQUESTED],
       ["Camping Cooler", "Outdoor", "Large insulated cooler with wheels for day trips and camping.", ItemStatus.BORROWED],
-    ] as [string, string, string, ItemStatus][]).map(([title, category, description, status]) => prisma.item.create({ data: { title, category, description, status, ownerId: realUser!.id } })));
+  ] as [string, string, string, ItemStatus][]).map(([title, category, description, status], index) => prisma.item.create({ data: { title, category, description, status, ownerId: realUser!.id, city: demoCities[(index + userIndex) % demoCities.length][0], region: demoCities[(index + userIndex) % demoCities.length][1], latitude: demoCoordinates[(index + userIndex) % demoCoordinates.length][0], longitude: demoCoordinates[(index + userIndex) % demoCoordinates.length][1], condition: demoConditions[(index + userIndex) % demoConditions.length] } })));
     const shared = await Promise.all([
       ["Circular Saw", "Tools", "Reliable saw with a spare blade for home projects."],
       ["Portable Speaker", "Electronics", "Water-resistant Bluetooth speaker with a long-lasting battery."],
       ["Travel Backpack", "Travel", "Carry-on backpack with a padded laptop sleeve."]
-    ].map(([title, category, description]) => prisma.item.create({ data: { title: `${title} (${userIndex + 1})`, category, description, ownerId: syntheticUsers[userIndex % syntheticUsers.length].id } })));
+    ].map(([title, category, description], index) => prisma.item.create({ data: { title: `${title} (${userIndex + 1})`, category, description, ownerId: syntheticUsers[userIndex % syntheticUsers.length].id, city: demoCities[(index + userIndex) % demoCities.length][0], region: demoCities[(index + userIndex) % demoCities.length][1], latitude: demoCoordinates[(index + userIndex) % demoCoordinates.length][0], longitude: demoCoordinates[(index + userIndex) % demoCoordinates.length][1], condition: demoConditions[(index + userIndex) % demoConditions.length] } })));
     const requestData = [
       [owned[1], syntheticUsers[(userIndex + 0) % syntheticUsers.length], BorrowRequestStatus.PENDING],
       [owned[3], syntheticUsers[(userIndex + 1) % syntheticUsers.length], BorrowRequestStatus.PENDING],
@@ -176,11 +195,14 @@ async function seedForRealUsers(emails: string[]) {
       [owned[7], syntheticUsers[(userIndex + 4) % syntheticUsers.length], BorrowRequestStatus.APPROVED],
       [owned[0], syntheticUsers[(userIndex + 5) % syntheticUsers.length], BorrowRequestStatus.RETURNED],
       [owned[2], syntheticUsers[(userIndex + 6) % syntheticUsers.length], BorrowRequestStatus.CANCELLED],
-    ] as const;
+  ] as const;
     for (const [item, requester, status] of requestData) {
       if (item.ownerId === requester.id) throw new Error(`Invalid self-request for ${item.title}`);
       await prisma.borrowRequest.create({ data: { itemId: item.id, requesterId: requester.id, status } });
     }
+    const savedItems = catalog.filter((item) => item.ownerId !== realUser!.id).slice(userIndex, userIndex + 8);
+    await prisma.favorite.createMany({ data: savedItems.map((item) => ({ userId: realUser!.id, itemId: item.id })), skipDuplicates: true });
+    await prisma.notification.createMany({ data: catalog.slice(userIndex, userIndex + 8).map((item, index) => ({ userId: realUser!.id, itemId: item.id, type: [NotificationType.REQUEST_RECEIVED, NotificationType.REQUEST_APPROVED, NotificationType.REQUEST_DECLINED, NotificationType.REQUEST_CANCELLED, NotificationType.ITEM_RETURNED][index % 5], title: ["New borrow request", "Request approved", "Request declined", "Request cancelled", "Item returned"][index % 5], message: [`Someone requested your ${item.title}.`, `Your request for ${item.title} was approved.`, `Your request for ${item.title} was declined.`, `A request for ${item.title} was cancelled.`, `Your ${item.title} was marked as returned.`][index % 5], readAt: index % 3 === 0 ? null : new Date() })) });
     console.log(`Seeded demo data for ${realUser!.email}: ${owned.length + shared.length} items, ${requestData.length} requests.`);
   }
 }

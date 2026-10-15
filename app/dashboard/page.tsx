@@ -14,7 +14,8 @@ async function getDashboardData(userId: string) {
     prisma.borrowRequest.findMany({ where: { requesterId: userId, status: BorrowRequestStatus.APPROVED, item: { status: ItemStatus.BORROWED } }, include: { item: true }, orderBy: { createdAt: "desc" } }),
     prisma.borrowRequest.findMany({ where: { OR: [{ requesterId: userId }, { item: { ownerId: userId } }], status: { in: [BorrowRequestStatus.DECLINED, BorrowRequestStatus.CANCELLED, BorrowRequestStatus.RETURNED] } }, include: { item: true }, orderBy: { updatedAt: "desc" } }),
   ]);
-  return { owned, incoming: incoming.map(({ item }) => item), requested: requested.map(({ item }) => item), borrowed: borrowed.map(({ item }) => item), history };
+  const hideCoordinates = <T extends { latitude: number | null; longitude: number | null }>(item: T) => ({ ...item, latitude: null, longitude: null });
+  return { owned: owned.map(hideCoordinates), incoming: incoming.map(({ item }) => hideCoordinates(item)), requested: requested.map(({ item }) => hideCoordinates(item)), borrowed: borrowed.map(({ item }) => hideCoordinates(item)), history: history.map((request) => ({ ...request, item: hideCoordinates(request.item) })) };
 }
 
 function Section({ title, empty, children }: { title: string; empty: string; children: React.ReactNode }) {

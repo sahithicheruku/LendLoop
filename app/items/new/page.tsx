@@ -3,26 +3,70 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Navigation from "@/app/components/Navigation";
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export default function NewItemPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [city, setCity] = useState("");
+  const [region, setRegion] = useState("");
+  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationMessage, setLocationMessage] = useState<string | null>(null);
+  const [condition, setCondition] = useState("");
+  const [availableFrom, setAvailableFrom] = useState("");
+  const [availableUntil, setAvailableUntil] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function useApproximateLocation() {
+    if (!navigator.geolocation) {
+      setLocationMessage("Approximate location is not available in this browser.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setCoordinates({ latitude: coords.latitude, longitude: coords.longitude });
+        setLocationMessage("Approximate location added. Only city-level details are shown publicly.");
+      },
+      () => setLocationMessage("Location permission was unavailable. You can still list the item using city and region."),
+      { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
+    );
+  }
+
+  function selectImages(files: FileList | null) {
+    if (!files) return;
+    const selected = Array.from(files);
+    if (selected.length > 3) return setError("Choose up to 3 images.");
+    if (selected.some((file) => !ALLOWED_IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_SIZE)) return setError("Images must be JPG, PNG, or WEBP files smaller than 5 MB.");
+    setError(null);
+    setImages(selected);
+    setPreviews(selected.map((file) => URL.createObjectURL(file)));
+  }
+
+  function removeImage(index: number) {
+    setImages((current) => current.filter((_, imageIndex) => imageIndex !== index));
+    setPreviews((current) => current.filter((_, imageIndex) => imageIndex !== index));
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (availableFrom && availableUntil && availableUntil <= availableFrom) {
+      setError("Available until must be after available from.");
+      return;
+    }
     setLoading(true);
     setError(null);
 
     const res = await fetch("/api/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, category, imageUrl: imageUrl || null }),
+      body: JSON.stringify({ title, description, category, city, region, latitude: coordinates?.latitude ?? null, longitude: coordinates?.longitude ?? null, availableFrom: availableFrom || null, availableUntil: availableUntil || null, condition: condition || null }),
     });
 
     setLoading(false);
@@ -31,6 +75,22 @@ export default function NewItemPage() {
       const data = await res.json().catch(() => ({}));
       setError(data?.error ?? "Failed to create item");
       return;
+    }
+
+    const created = await res.json();
+    const itemId = created.item.id as string;
+    if (images.length > 0) {
+      try {
+        const imageForm = new FormData();
+        images.forEach((file) => imageForm.append("images", file));
+        const imageResponse = await fetch(`/api/items/${itemId}/images/upload`, { method: "POST", body: imageForm });
+        if (!imageResponse.ok) throw new Error("Images could not be saved.");
+      } catch (uploadError) {
+        await fetch(`/api/items/${itemId}`, { method: "DELETE" });
+        setError(uploadError instanceof Error ? uploadError.message : "Image upload failed.");
+        setLoading(false);
+        return;
+      }
     }
 
     router.push("/items");
@@ -51,7 +111,10 @@ export default function NewItemPage() {
   return (
     <main className="min-h-screen bg-[#faf8f5]">
       <div className="mx-auto max-w-2xl px-6 py-10">
-        <Navigation />
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <Link href="/" className="text-xl font-bold tracking-tight text-[#2d1810]">LendLoop</Link>
+          <Link href="/items" className="text-sm font-medium text-[#2d1810] hover:text-[#d97706]">Browse Items</Link>
+        </header>
         <div className="mb-8 mt-8"><div className="text-xs font-semibold uppercase tracking-wide text-[#92400e]">List an item</div><h1 className="mt-2 text-4xl font-extrabold tracking-tight text-[#1c1917]">Share Something You Own</h1><p className="mt-2 text-[#78716c]">Add an item you&apos;re willing to lend to your community.</p></div>
 
         {/* Tips Card */}
@@ -92,6 +155,48 @@ export default function NewItemPage() {
               placeholder="e.g., Bike Pump, Camping Tent, Electric Drill"
               required
             />
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label htmlFor="available-from" className="block text-sm font-bold text-[#2d1810]">Available from <span className="font-normal text-[#78716c]">(optional)</span></label>
+              <input id="available-from" type="date" value={availableFrom} onChange={(e) => setAvailableFrom(e.target.value)} className="mt-2 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-3 text-[#1c1917] focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20" />
+            </div>
+            <div>
+              <label htmlFor="available-until" className="block text-sm font-bold text-[#2d1810]">Available until <span className="font-normal text-[#78716c]">(optional)</span></label>
+              <input id="available-until" type="date" min={availableFrom || undefined} value={availableUntil} onChange={(e) => setAvailableUntil(e.target.value)} className="mt-2 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-3 text-[#1c1917] focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-[#2d1810]" htmlFor="location">Approximate location</label>
+            <p id="location-help" className="mt-1 text-xs text-[#78716c]">City and region are shown publicly. Exact coordinates are never displayed.</p>
+            <button type="button" onClick={useApproximateLocation} aria-describedby="location-help" className="mt-3 rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-2.5 text-sm font-semibold text-[#2d1810] transition hover:border-[#d97706]">
+              Use my approximate location
+            </button>
+            {locationMessage && <p id="location" role="status" className="mt-2 text-sm text-[#57534e]">{locationMessage}</p>}
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label htmlFor="city" className="block text-sm font-bold text-[#2d1810]">City <span className="font-normal text-[#78716c]">(optional)</span></label>
+              <input id="city" type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., Plano" className="mt-2 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-3 text-[#1c1917] placeholder:text-[#a8a29e] focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20" />
+            </div>
+            <div>
+              <label htmlFor="region" className="block text-sm font-bold text-[#2d1810]">State / Region <span className="font-normal text-[#78716c]">(optional)</span></label>
+              <input id="region" type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="e.g., TX" className="mt-2 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-3 text-[#1c1917] placeholder:text-[#a8a29e] focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20" />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="condition" className="block text-sm font-bold text-[#2d1810]">Condition <span className="font-normal text-[#78716c]">(optional)</span></label>
+            <select id="condition" value={condition} onChange={(e) => setCondition(e.target.value)} className="mt-2 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-3 text-[#1c1917] focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20">
+              <option value="">Select condition</option>
+              <option value="NEW">New</option>
+              <option value="LIKE_NEW">Like new</option>
+              <option value="GOOD">Good</option>
+              <option value="FAIR">Fair</option>
+            </select>
           </div>
 
           {/* Description */}
@@ -156,9 +261,10 @@ export default function NewItemPage() {
           </div>
 
           <div>
-            <label htmlFor="imageUrl" className="block text-sm font-bold text-[#2d1810]">Image URL <span className="font-normal text-[#78716c]">(optional)</span></label>
-            <p className="mt-1 text-xs text-[#78716c]">Add a direct image URL for the item.</p>
-            <input id="imageUrl" type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/item-photo.jpg" className="mt-2 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-3 text-[#1c1917] placeholder:text-[#a8a29e] focus:border-[#d97706] focus:outline-none" />
+            <label htmlFor="images" className="block text-sm font-bold text-[#2d1810]">Item photos <span className="font-normal text-[#78716c]">(optional, up to 3)</span></label>
+            <p className="mt-1 text-xs text-[#78716c]">JPG, PNG, or WEBP. Maximum 5 MB per image.</p>
+            <input id="images" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => selectImages(e.target.files)} className="mt-2 block w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 py-3 text-sm text-[#1c1917] file:mr-4 file:rounded-md file:border-0 file:bg-[#fef3c7] file:px-3 file:py-2 file:font-semibold file:text-[#92400e]" />
+            {previews.length > 0 && <div className="mt-3 grid grid-cols-3 gap-3">{previews.map((preview, index) => <div key={preview} className="relative"><img src={preview} alt={`Selected item photo ${index + 1}`} className="h-24 w-full rounded-md object-cover" /><button type="button" onClick={() => removeImage(index)} className="absolute right-1 top-1 rounded-full bg-white px-2 py-1 text-xs font-bold text-[#2d1810] shadow">Remove</button></div>)}</div>}
           </div>
 
           {/* Error message */}

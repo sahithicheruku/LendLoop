@@ -5,11 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { ItemStatus } from "@prisma/client";
 import { getAuthSession } from "@/lib/auth";
 import Navigation from "@/app/components/Navigation";
+import { approximateCoordinate } from "@/lib/distance";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-async function getItems(search: string, category: string): Promise<Item[]> {
+async function getItems(search: string, category: string, userId?: string): Promise<Item[]> {
   try {
     const items = await prisma.item.findMany({
       where: {
@@ -17,11 +18,12 @@ async function getItems(search: string, category: string): Promise<Item[]> {
         ...(search ? { title: { contains: search, mode: "insensitive" } } : {}),
         ...(category ? { category } : {}),
       },
-      include: { owner: { select: { name: true } } },
+      include: { owner: { select: { name: true } }, images: { orderBy: { position: "asc" } }, reviews: { select: { rating: true } } },
       orderBy: { createdAt: "desc" },
     });
 
-    return items.map(({ owner, ...item }) => ({ ...item, ownerName: owner.name }));
+    const favoriteIds = userId ? new Set((await prisma.favorite.findMany({ where: { userId, itemId: { in: items.map((item) => item.id) } }, select: { itemId: true } })).map(({ itemId }) => itemId)) : new Set<string>();
+    return items.map(({ owner, reviews, ...item }) => ({ ...item, ownerName: owner.name, latitude: approximateCoordinate(item.latitude), longitude: approximateCoordinate(item.longitude), isFavorited: favoriteIds.has(item.id), reviewCount: reviews.length, averageRating: reviews.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : null }));
   } catch (err) {
     console.error("getItems prisma error:", err);
     return [];
@@ -32,8 +34,8 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const search = params.search?.trim() ?? "";
   const category = params.category?.trim() ?? "";
-  const items = await getItems(search, category);
   const session = await getAuthSession();
+  const items = await getItems(search, category, session?.user.id);
   const categories = Array.from(new Set(items.map((item) => item.category))).sort();
 
   return (
@@ -41,15 +43,20 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
       <div className="mx-auto max-w-6xl px-6 py-10">
         <Navigation />
 
-        <form className="mt-6 grid gap-3 rounded-lg border border-[#e7e5e4] bg-white p-4 sm:grid-cols-[1fr_12rem_auto]" method="get">
-          <label className="sr-only" htmlFor="search">Search items</label>
-          <input id="search" name="search" defaultValue={search} placeholder="Search by item name" className="rounded-md border-2 border-[#e7e5e4] px-4 py-2 text-sm focus:border-[#d97706] focus:outline-none" />
-          <label className="sr-only" htmlFor="category">Filter by category</label>
-          <select id="category" name="category" defaultValue={category} className="rounded-md border-2 border-[#e7e5e4] px-4 py-2 text-sm focus:border-[#d97706] focus:outline-none">
-            <option value="">All categories</option>
-            {categories.map((option) => <option key={option} value={option}>{option}</option>)}
-          </select>
-          <button type="submit" className="rounded-md bg-[#2d1810] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1c1410]">Search</button>
+        <form className={`mt-6 grid items-end gap-3 rounded-lg border border-[#e7e5e4] bg-white p-4 ${search || category ? "sm:grid-cols-[minmax(0,1fr)_14rem_auto_auto]" : "sm:grid-cols-[minmax(0,1fr)_14rem_auto]"}`} method="get">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#78716c]" htmlFor="search">Search items</label>
+            <input id="search" name="search" defaultValue={search} placeholder="Search by item name" className="h-11 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#78716c]" htmlFor="category">Category</label>
+            <select id="category" name="category" defaultValue={category} className="h-11 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 text-sm text-stone-900 focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20">
+              <option value="">All categories</option>
+              {categories.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </div>
+          <button type="submit" className="h-11 rounded-md bg-[#2d1810] px-5 text-sm font-semibold text-white transition hover:bg-[#1c1410]">Search</button>
+          {(search || category) && <Link href="/items" className="inline-flex h-11 items-center justify-center rounded-md border-2 border-[#e7e5e4] px-4 text-sm font-semibold text-[#57534e] transition hover:border-[#d97706] hover:text-[#92400e]">Clear filters</Link>}
         </form>
 
         <div className="mt-8 rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm sm:p-8">
@@ -135,7 +142,7 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
               </div>
             </div>
           ) : (
-            <ItemsClient items={items} currentUserId={session?.user.id} />
+            <ItemsClient items={items} currentUserId={session?.user.id} enableLocation />
           )}
         </div>
       </div>

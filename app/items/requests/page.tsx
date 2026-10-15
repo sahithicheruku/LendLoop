@@ -4,6 +4,7 @@ import { getAuthSession } from "@/lib/auth";
 import { BorrowRequestStatus } from "@prisma/client";
 import Navigation from "@/app/components/Navigation";
 import RequestCards from "./RequestCards";
+import ReviewForm from "./ReviewForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,7 +30,7 @@ export default async function RequestsPage() {
   const session = await getAuthSession();
   const history = session?.user.id ? await prisma.borrowRequest.findMany({
     where: { requesterId: session.user.id, status: { in: [BorrowRequestStatus.DECLINED, BorrowRequestStatus.CANCELLED, BorrowRequestStatus.RETURNED] } },
-    include: { item: true },
+    include: { item: true, review: { include: { reviewer: { select: { name: true } } } } },
     orderBy: { updatedAt: "desc" },
   }) : [];
 
@@ -59,7 +60,7 @@ export default async function RequestsPage() {
             </>
           )}
         </div>
-        {history.length > 0 && <section className="mt-8 rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm"><h2 className="mb-4 text-2xl font-bold text-[#1c1917]">Request History</h2><ul className="divide-y divide-[#e7e5e4]">{history.map((request) => <li key={request.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><span className="font-medium text-[#2d1810]">{request.item.title}</span><span className="rounded-full bg-[#f5f5f4] px-3 py-1 text-xs font-semibold capitalize text-[#57534e]">{request.status.toLowerCase()}</span></li>)}</ul></section>}
+        {history.length > 0 && <section className="mt-8 rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm"><h2 className="mb-4 text-2xl font-bold text-[#1c1917]">Request History</h2><ul className="divide-y divide-[#e7e5e4]">{history.map((request) => <li key={request.id} className="py-4"><div className="flex flex-wrap items-center justify-between gap-3"><span className="font-medium text-[#2d1810]">{request.item.title}</span><span className="rounded-full bg-[#f5f5f4] px-3 py-1 text-xs font-semibold capitalize text-[#57534e]">{request.status.toLowerCase()}</span></div>{request.status === BorrowRequestStatus.RETURNED && (request.review ? <div className="mt-2 text-sm text-[#57534e]" aria-label={`Your ${request.review.rating} star review`}>★ {request.review.rating}/5{request.review.comment ? ` — ${request.review.comment}` : ""}</div> : <ReviewForm requestId={request.id} />)}</li>)}</ul></section>}
       </div>
     </main>
   );

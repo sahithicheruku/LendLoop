@@ -19,9 +19,12 @@ model User {
   updatedAt      DateTime @updatedAt
 
   itemsOwned     Item[]  @relation("OwnedItems")
+  favorites      Favorite[]
   requests       BorrowRequest[]
   accounts       Account[]
   sessions       Session[]
+  notifications  Notification[]
+  reviewsWritten Review[]
 }
 
 model Account {
@@ -69,6 +72,13 @@ model Item {
   description   String?
   category      String
   imageUrl      String?
+  city          String?
+  region        String?
+  latitude      Float?
+  longitude     Float?
+  availableFrom DateTime?
+  availableUntil DateTime?
+  condition     ItemCondition?
   status        ItemStatus @default(AVAILABLE)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -77,6 +87,24 @@ model Item {
 
   owner         User     @relation("OwnedItems", fields: [ownerId], references: [id])
   requests      BorrowRequest[]
+  images        ItemImage[]
+  favoritedBy    Favorite[]
+  notifications  Notification[]
+  reviews         Review[]
+}
+
+model ItemImage {
+  id          String   @id @default(cuid())
+  itemId      String
+  url         String
+  storagePath String
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId, position])
+  @@unique([itemId, storagePath])
 }
 
 model BorrowRequest {
@@ -89,10 +117,62 @@ model BorrowRequest {
 
   item        Item                @relation(fields: [itemId], references: [id], onDelete: Cascade)
   requester   User                @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+  review        Review?
 
   @@unique([itemId, requesterId])
   @@index([requesterId, status])
   @@index([itemId, status])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  itemId    String?
+  requestId String?
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item    Item?          @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  request BorrowRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt, createdAt])
+  @@index([requestId, type])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  requestId  String   @unique
+  reviewerId String
+  itemId     String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  request  BorrowRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  reviewer User          @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  item     Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId, createdAt])
+  @@index([reviewerId, createdAt])
 }
 
 enum UserRole {
@@ -106,10 +186,26 @@ enum ItemStatus {
   BORROWED
 }
 
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+}
+
 enum BorrowRequestStatus {
   PENDING
   APPROVED
   DECLINED
   CANCELLED
   RETURNED
+}
+
+enum NotificationType {
+  REQUEST_RECEIVED
+  REQUEST_APPROVED
+  REQUEST_DECLINED
+  REQUEST_CANCELLED
+  ITEM_RETURNED
+  NEW_REVIEW
 }
