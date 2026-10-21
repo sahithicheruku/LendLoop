@@ -40,10 +40,10 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="min-h-screen bg-[#faf8f5]">
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="mx-auto max-w-7xl px-6 py-10">
         <Navigation />
 
-        <form className={`mt-6 grid items-end gap-3 rounded-lg border border-[#e7e5e4] bg-white p-4 ${search || category ? "sm:grid-cols-[minmax(0,1fr)_14rem_auto_auto]" : "sm:grid-cols-[minmax(0,1fr)_14rem_auto]"}`} method="get">
+        <form className={`mt-8 grid items-end gap-3 rounded-lg border border-[#e7e5e4] bg-white p-4 shadow-sm ${search || category ? "md:grid-cols-[minmax(0,1fr)_14rem_auto_auto]" : "md:grid-cols-[minmax(0,1fr)_14rem_auto]"}`} method="get">
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#78716c]" htmlFor="search">Search items</label>
             <input id="search" name="search" defaultValue={search} placeholder="Search by item name" className="h-11 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20" />
@@ -59,85 +59,32 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
           {(search || category) && <Link href="/items" className="inline-flex h-11 items-center justify-center rounded-md border-2 border-[#e7e5e4] px-4 text-sm font-semibold text-[#57534e] transition hover:border-[#d97706] hover:text-[#92400e]">Clear filters</Link>}
         </form>
 
-        <div className="mt-8 rounded-lg border border-[#e7e5e4] bg-white p-6 shadow-sm sm:p-8">
-          <div>
-            <div className="inline-block rounded-full bg-[#fef3c7] px-3 py-1 text-xs font-semibold text-[#92400e] mb-3">
-              Browse Catalog
-            </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-[#1c1917]">
-              Available Items
-            </h1>
-            <p className="mt-3 max-w-2xl text-base text-[#57534e]">
-              Browse items from your community. Found something you need? Send a
-              request and coordinate pickup with the owner.
-            </p>
-          </div>
-
-          {/* Quick Info Cards */}
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-[#e7e5e4] bg-gradient-to-br from-[#fef3c7] to-white p-5">
-              <div className="text-sm font-semibold text-[#78350f]">
-                Available Now
-              </div>
-              <div className="mt-2 text-3xl font-extrabold text-[#92400e]">
-                {items.length}
-              </div>
-              <div className="mt-1 text-sm text-[#78716c]">
-                {items.length === 1 ? "item ready" : "items ready"} to borrow
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
-              <div className="text-sm font-semibold text-[#57534e]">
-                Quick Tip
-              </div>
-              <div className="mt-2 text-base font-bold text-[#2d1810]">
-                Check descriptions
-              </div>
-              <div className="mt-1 text-sm text-[#78716c]">
-                Owners add pickup details & conditions
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-[#e7e5e4] bg-white p-5">
-              <div className="text-sm font-semibold text-[#57534e]">
-                Be Respectful
-              </div>
-              <div className="mt-2 text-base font-bold text-[#2d1810]">
-                Return on time
-              </div>
-              <div className="mt-1 text-sm text-[#78716c]">
-                Help keep the community thriving
-              </div>
-            </div>
-          </div>
+        <div className="mt-10 max-w-3xl">
+          <h1 className="text-4xl font-extrabold tracking-tight text-[#1c1917]">Available Items</h1>
+          <p className="mt-3 text-base leading-7 text-[#57534e]">Browse useful items shared by people in your community.</p>
         </div>
 
         <div className="mt-10">
-          <div className="mb-6 flex items-end justify-between">
+          <div className="mb-5 flex items-end justify-between">
             <h2 className="text-2xl font-bold text-[#1c1917]">
               Browse Items {items.length > 0 && `(${items.length})`}
             </h2>
-            {items.length > 0 && (
-              <p className="text-sm text-[#78716c]">Updated in real-time</p>
-            )}
           </div>
 
           {items.length === 0 ? (
-            <div className="rounded-lg border-2 border-dashed border-[#e7e5e4] bg-white p-16 text-center">
+            <div className="rounded-lg border border-[#e7e5e4] bg-white p-10 text-center sm:p-12">
               <div className="mx-auto max-w-sm">
-                <div aria-hidden="true" className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#fef3c7] text-lg text-[#92400e]">—</div>
                 <h3 className="text-xl font-bold text-[#2d1810]">
-                  {search || category ? "No matching items" : "No items available yet"}
+                  {search || category ? "No matching items" : "Nothing to browse just yet"}
                 </h3>
                 <p className="mt-3 text-sm text-[#78716c]">
-                  {search || category ? "Try a different search or category." : "Be the first to share something from your garage, closet, or shed."}
+                  {search || category ? "Try a different search or category." : "Have something useful? Share it with your community."}
                 </p>
                 <Link
                   href="/items/new"
                   className="mt-6 inline-flex items-center gap-2 rounded-md bg-[#d97706] px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#b45309]"
                 >
-                  <span>List Your First Item</span>
+                  <span>Add an Item</span>
                 </Link>
               </div>
             </div>
