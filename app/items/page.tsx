@@ -30,13 +30,30 @@ async function getItems(search: string, category: string, userId?: string): Prom
   }
 }
 
+async function getCategories(): Promise<string[]> {
+  try {
+    const categories = await prisma.item.findMany({
+      where: { status: ItemStatus.AVAILABLE },
+      select: { category: true },
+      distinct: ["category"],
+      orderBy: { category: "asc" },
+    });
+    return categories.map(({ category }) => category).filter(Boolean);
+  } catch (err) {
+    console.error("getCategories prisma error:", err);
+    return [];
+  }
+}
+
 export default async function ItemsPage({ searchParams }: { searchParams: Promise<{ search?: string; category?: string }> }) {
   const params = await searchParams;
   const search = params.search?.trim() ?? "";
   const category = params.category?.trim() ?? "";
   const session = await getAuthSession();
-  const items = await getItems(search, category, session?.user.id);
-  const categories = Array.from(new Set(items.map((item) => item.category))).sort();
+  const [items, categories] = await Promise.all([
+    getItems(search, category, session?.user.id),
+    getCategories(),
+  ]);
 
   return (
     <main className="min-h-screen bg-[#faf8f5]">
