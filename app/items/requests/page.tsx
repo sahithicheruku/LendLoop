@@ -5,6 +5,7 @@ import { BorrowRequestStatus } from "@prisma/client";
 import Navigation from "@/app/components/Navigation";
 import RequestCards from "./RequestCards";
 import ReviewForm from "./ReviewForm";
+import BackLink from "@/app/components/BackLink";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -38,7 +39,8 @@ export default async function RequestsPage() {
     <main className="min-h-screen bg-[#faf8f5]">
       <div className="mx-auto max-w-6xl px-6 py-10">
         <Navigation />
-        <div className="mb-8 mt-8">
+        <BackLink label="Back home" />
+        <div className="mb-8 mt-2">
           <div className="text-xs font-semibold uppercase tracking-wide text-[#92400e]">Requests</div>
           <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-[#1c1917]">My Requests</h1>
           <p className="mt-2 text-[#78716c]">Track the items you&apos;ve requested and their current status.</p>

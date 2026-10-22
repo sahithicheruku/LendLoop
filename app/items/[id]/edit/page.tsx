@@ -3,6 +3,7 @@ import Navigation from "@/app/components/Navigation";
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import EditItemForm from "./EditItemForm";
+import BackLink from "@/app/components/BackLink";
 
 export const dynamic = "force-dynamic";
 
@@ -14,5 +15,5 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
   if (!item) notFound();
   if (item.ownerId !== session.user.id) redirect(`/items/${id}`);
   const date = (value: Date | null) => value ? value.toISOString().slice(0, 10) : "";
-  return <main className="min-h-screen bg-[#faf8f5]"><div className="mx-auto max-w-6xl px-6 py-10"><Navigation /><h1 className="mt-8 text-4xl font-extrabold tracking-tight text-[#1c1917]">Edit item</h1><p className="mt-2 text-sm text-[#78716c]">Update your listing details. Active borrow transactions keep their current availability.</p><div className="mt-8"><EditItemForm initial={{ ...item, description: item.description ?? "", condition: item.condition ?? "", city: item.city ?? "", region: item.region ?? "", availableFrom: date(item.availableFrom), availableUntil: date(item.availableUntil) }} /></div></div></main>;
+  return <main className="min-h-screen bg-[#faf8f5]"><div className="mx-auto max-w-6xl px-6 py-10"><Navigation /><BackLink label="Back to item" /><h1 className="mt-2 text-4xl font-extrabold tracking-tight text-[#1c1917]">Edit item</h1><p className="mt-2 text-sm text-[#78716c]">Update your listing details. Active borrow transactions keep their current availability.</p><div className="mt-8"><EditItemForm initial={{ ...item, description: item.description ?? "", condition: item.condition ?? "", city: item.city ?? "", region: item.region ?? "", availableFrom: date(item.availableFrom), availableUntil: date(item.availableUntil) }} /></div></div></main>;
 }

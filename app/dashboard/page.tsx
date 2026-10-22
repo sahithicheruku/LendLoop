@@ -4,6 +4,7 @@ import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ItemsClient from "@/app/items/ItemsClient";
 import Navigation from "@/app/components/Navigation";
+import BackLink from "@/app/components/BackLink";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function DashboardPage() {
   const data = await getDashboardData(session.user.id);
   return (
     <main className="min-h-screen bg-[#faf8f5]"><div className="mx-auto max-w-6xl px-6 py-10">
-      <Navigation /><div className="mb-8 mt-8"><div className="text-xs font-semibold uppercase tracking-wide text-[#92400e]">Overview</div><h1 className="mt-2 text-4xl font-extrabold tracking-tight text-[#1c1917]">Dashboard</h1><p className="mt-2 text-[#78716c]">Manage your items, requests, and active borrows.</p></div>
+      <Navigation /><BackLink label="Back home" /><div className="mb-8 mt-2"><div className="text-xs font-semibold uppercase tracking-wide text-[#92400e]">Overview</div><h1 className="mt-2 text-4xl font-extrabold tracking-tight text-[#1c1917]">Dashboard</h1><p className="mt-2 text-[#78716c]">Manage your items, requests, and active borrows.</p></div>
       <div className="grid gap-6 lg:grid-cols-2">
         <Section title="My Items" empty="You have not listed any items yet." className="lg:col-span-2">{data.owned.length > 0 && <ItemsClient items={data.owned} ownerView currentUserId={session.user.id} />}</Section>
         <Section title="Incoming Requests" empty="No incoming requests yet." className="lg:col-span-2">{data.incoming.length > 0 && <ItemsClient items={data.incoming} ownerView currentUserId={session.user.id} />}</Section>

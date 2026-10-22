@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ItemStatus } from "@prisma/client";
 import { getAuthSession } from "@/lib/auth";
 import Navigation from "@/app/components/Navigation";
+import BackLink from "@/app/components/BackLink";
 import { approximateCoordinate } from "@/lib/distance";
 
 export const dynamic = "force-dynamic";
@@ -67,6 +68,7 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
     <main className="min-h-screen bg-[#faf8f5]">
       <div className="mx-auto max-w-7xl px-6 py-10">
         <Navigation />
+        <BackLink label="Back home" />
 
         <form className={`mt-8 grid items-end gap-3 rounded-lg border border-[#e7e5e4] bg-white p-4 shadow-sm ${search || category ? "md:grid-cols-[minmax(0,1fr)_14rem_auto_auto]" : "md:grid-cols-[minmax(0,1fr)_14rem_auto]"}`} method="get">
           <div>

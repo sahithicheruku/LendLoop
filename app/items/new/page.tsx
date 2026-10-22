@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import BackLink from "@/app/components/BackLink";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -115,7 +116,8 @@ export default function NewItemPage() {
           <Link href="/" className="text-xl font-bold tracking-tight text-[#2d1810]">LendLoop</Link>
           <Link href="/items" className="text-sm font-medium text-[#2d1810] hover:text-[#d97706]">Browse Items</Link>
         </header>
-        <div className="mb-8 mt-8"><div className="text-xs font-semibold uppercase tracking-wide text-[#92400e]">List an item</div><h1 className="mt-2 text-4xl font-extrabold tracking-tight text-[#1c1917]">Share Something You Own</h1><p className="mt-2 text-[#78716c]">Add an item you&apos;re willing to lend to your community.</p></div>
+        <BackLink label="Back home" />
+        <div className="mb-8 mt-2"><div className="text-xs font-semibold uppercase tracking-wide text-[#92400e]">List an item</div><h1 className="mt-2 text-4xl font-extrabold tracking-tight text-[#1c1917]">Share Something You Own</h1><p className="mt-2 text-[#78716c]">Add an item you&apos;re willing to lend to your community.</p></div>
 
         {/* Tips Card */}
         <div className="mt-6 rounded-lg border border-[#e7e5e4] bg-white p-6">
