@@ -16,6 +16,7 @@ async function getItems(search: string, category: string, userId?: string): Prom
     const items = await prisma.item.findMany({
       where: {
         status: ItemStatus.AVAILABLE,
+        ...(userId ? { ownerId: { not: userId } } : {}),
         ...(search ? {
           OR: [
             { title: { contains: search, mode: "insensitive" } },
