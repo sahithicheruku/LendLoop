@@ -15,7 +15,15 @@ async function getItems(search: string, category: string, userId?: string): Prom
     const items = await prisma.item.findMany({
       where: {
         status: ItemStatus.AVAILABLE,
-        ...(search ? { title: { contains: search, mode: "insensitive" } } : {}),
+        ...(search ? {
+          OR: [
+            { title: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } },
+            { category: { contains: search, mode: "insensitive" } },
+            { city: { contains: search, mode: "insensitive" } },
+            { region: { contains: search, mode: "insensitive" } },
+          ],
+        } : {}),
         ...(category ? { category } : {}),
       },
       include: { owner: { select: { name: true } }, images: { orderBy: { position: "asc" } }, reviews: { select: { rating: true } } },
@@ -63,7 +71,7 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
         <form className={`mt-8 grid items-end gap-3 rounded-lg border border-[#e7e5e4] bg-white p-4 shadow-sm ${search || category ? "md:grid-cols-[minmax(0,1fr)_14rem_auto_auto]" : "md:grid-cols-[minmax(0,1fr)_14rem_auto]"}`} method="get">
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#78716c]" htmlFor="search">Search items</label>
-            <input id="search" name="search" defaultValue={search} placeholder="Search by item name" className="h-11 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20" />
+            <input id="search" name="search" defaultValue={search} placeholder="Search by item or details" className="h-11 w-full rounded-md border-2 border-[#e7e5e4] bg-white px-4 text-sm text-stone-900 placeholder:text-stone-400 focus:border-[#d97706] focus:outline-none focus:ring-2 focus:ring-[#d97706]/20" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#78716c]" htmlFor="category">Category</label>
